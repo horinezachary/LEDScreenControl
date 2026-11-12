@@ -115,11 +115,7 @@ function screenTargets(screen: unknown): { id: string; layer?: number }[] {
   return list(obj(screen).screens)
     .map(obj)
     .filter((s) => str(s.screenID))
-    .map((s) => {
-      const mode = list(s.layersInWorkingMode)[0];
-      const layer = obj(list(obj(mode).layers)[0] ?? mode);
-      return { id: str(s.screenID)!, layer: num(layer.id) };
-    });
+    .map((s) => ({ id: str(s.screenID)!, layer: num(liveLayers(s)[0]?.id) }));
 }
 
 /**
@@ -244,33 +240,50 @@ function parseFans(mon: Tree): FanStatus[] {
   });
 }
 
+/**
+ * The layers each screen shows now: those of its current working mode, and of those the ones placed on a canvas
+ * (a real CX40 Pro keeps a layer with layerInCanvasId 0 that is not shown).
+ */
+function liveLayers(s: Tree): Tree[] {
+  const modes = list(s.layersInWorkingMode);
+  const current = num(s.workingMode);
+  const mode = modes.find((m) => current !== undefined && num(obj(m).workingMode) === current) ?? modes[0];
+  const layers = (Array.isArray(mode) ? mode : list(obj(mode).layers).length ? list(obj(mode).layers) : mode ? [mode] : []).map(obj);
+  const placed = layers.filter((l) => (num(l.layerInCanvasId) ?? 0) !== 0);
+  return placed.length ? placed : layers;
+}
+
+/** A layer's source is the input's groupId on a real CX40 Pro (HDMI2.0 2 is id 0, groupId 1); id where there is none. */
+function sourceKey(s: Tree, i: number): number {
+  return num(s.groupId) ?? num(s.id) ?? i;
+}
+
 function parseInputs(raw: unknown, screens: Tree[]): InputStatus[] {
-  // The documentation shows one object; real answers may be a list. Both are read.
+  // The documentation shows one object; real answers are a list. Both are read.
   const sources = Array.isArray(raw) ? raw.map(obj) : Object.keys(obj(raw)).length ? [obj(raw)] : [];
   const used = new Set<number>();
   for (const s of screens) {
-    for (const mode of list(s.layersInWorkingMode)) {
-      const layers = Array.isArray(mode) ? mode : list(obj(mode).layers).length ? list(obj(mode).layers) : [mode];
-      for (const l of layers) {
-        const src = num(obj(l).source);
-        if (src !== undefined) used.add(src);
-      }
+    for (const l of liveLayers(s)) {
+      const src = num(l.source);
+      if (src !== undefined) used.add(src);
     }
   }
   return sources.map((s, i) => {
     const res = obj(s.actualResolution);
     const width = num(res.width);
     const height = num(res.height);
-    // sourceStatus is not documented, so a source counts as having signal when it reports a resolution.
-    const signal = (width ?? 0) > 0 && (height ?? 0) > 0;
-    const id = num(s.id) ?? i;
+    // A real CX40 Pro reports sourceStatus 1 for an input with signal and 0 without, and keeps the EDID resolution
+    // on every input, so the resolution only decides where sourceStatus is missing.
+    const status = num(s.sourceStatus);
+    const signal = status !== undefined ? status === 1 : (width ?? 0) > 0 && (height ?? 0) > 0;
+    const key = sourceKey(s, i);
     const rate = num(s.actualRefreshRate);
     return {
-      label: str(s.name) || `Input ${id + 1}`,
-      key: String(id),
+      label: str(s.name) || `Input ${(num(s.id) ?? i) + 1}`,
+      key: String(key),
       type: 'input',
-      number: id,
-      active: used.has(id),
+      number: key,
+      active: used.has(key),
       signal,
       width: signal ? width : undefined,
       height: signal ? height : undefined,

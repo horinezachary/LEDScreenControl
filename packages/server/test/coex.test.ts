@@ -123,6 +123,14 @@ describe('a real CX40 Pro with 5G ports', () => {
     expect(chainsOf(parseCoex({ ...fx, hw: { ...fx.hw, netPortBandWidth: undefined } }))[0].from.load?.capacity).toBe(650_000);
   });
 
+  it('finds the HDMI input the show is on, and signal from sourceStatus', () => {
+    const inputs = parseCoex(fx).inputs;
+    expect(inputs.filter((i) => i.active).map((i) => i.label)).toEqual(['HDMI2.0 2']);
+    expect(inputs.find((i) => i.active)).toMatchObject({ key: '1', signal: true, width: 3840, height: 2160, rate: 60 });
+    expect(inputs.filter((i) => i.signal).map((i) => i.label)).toEqual(['HDMI2.0 2', 'internal-source']);
+    expect(inputs.find((i) => i.label === '12G-SDI 2')).toMatchObject({ signal: false, width: undefined });
+  });
+
   it('labels cabinets by port and chain position, with the receiving card temperature', () => {
     const tile = chainsOf(parseCoex(fx))[0].tiles[0];
     expect(tile.label).toBe('Port 1, cabinet 1');

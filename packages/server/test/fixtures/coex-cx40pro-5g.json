@@ -1,5 +1,5 @@
 {
- "_source": "NovaStar CX40 Pro (hw V1.5.1, config V1.4.0.1, FPGA 2026_0424_192536) at a rehearsal, read-only GETs on 2026-11-12. Trimmed: hw keeps the fields the driver reads plus capability.maxCurtainCapacity; monitor/info and screen keep every cabinet; serial-like ids and the device password are left out.",
+ "_source": "NovaStar CX40 Pro (hw V1.5.1, config V1.4.0.1, FPGA 2026_0424_192536) at a rehearsal, read-only GETs on 2026-11-12. Trimmed: hw keeps the fields the driver reads plus capability.maxCurtainCapacity; monitor/info and screen keep every cabinet; sources keep the fields the driver reads (HDMI2.0 2 carries the show at 3840 × 2160); serial-like ids and the device password are left out.",
  "hw": {
   "name": "CX40 Pro",
   "customName": "CX40 Pro_000007",
@@ -2568,23 +2568,30 @@
     "layersInWorkingMode": [
      {
       "workingMode": 0,
+      "layerLayoutMode": 1,
       "layers": [
        {
         "id": 1,
-        "source": 25857
+        "source": 25857,
+        "layerInCanvasId": 256
        }
       ]
      },
      {
       "workingMode": 1,
+      "layerLayoutMode": 0,
       "layers": [
        {
         "id": 65537,
-        "source": 25857
+        "source": 25857,
+        "zOrder": 1,
+        "layerInCanvasId": 0
        },
        {
         "id": 65538,
-        "source": 1
+        "source": 1,
+        "zOrder": 0,
+        "layerInCanvasId": 256
        }
       ]
      }
@@ -2628,5 +2635,91 @@
   "backup": "",
   "masterName": "",
   "backupName": ""
- }
+ },
+ "sources": [
+  {
+   "id": 4,
+   "cardId": 0,
+   "type": 9,
+   "name": "12G-SDI 1",
+   "sourceStatus": 0,
+   "actualResolution": {
+    "height": 1080,
+    "width": 1920
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 5
+  },
+  {
+   "id": 1,
+   "cardId": 0,
+   "type": 9,
+   "name": "12G-SDI 2",
+   "sourceStatus": 0,
+   "actualResolution": {
+    "height": 1080,
+    "width": 1920
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 2
+  },
+  {
+   "id": 3,
+   "cardId": 0,
+   "type": 5,
+   "name": "DP1.2",
+   "sourceStatus": 0,
+   "actualResolution": {
+    "height": 2160,
+    "width": 3840
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 4
+  },
+  {
+   "id": 2,
+   "cardId": 0,
+   "type": 3,
+   "name": "HDMI2.0 1",
+   "sourceStatus": 0,
+   "actualResolution": {
+    "height": 2160,
+    "width": 3840
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 3
+  },
+  {
+   "id": 0,
+   "cardId": 0,
+   "type": 3,
+   "name": "HDMI2.0 2",
+   "sourceStatus": 1,
+   "actualResolution": {
+    "height": 2160,
+    "width": 3840
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 1
+  },
+  {
+   "id": 25856,
+   "cardId": 101,
+   "type": 224,
+   "name": "internal-source",
+   "sourceStatus": 1,
+   "actualResolution": {
+    "height": 2160,
+    "width": 3840
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 25857
+  }
+ ]
 }
