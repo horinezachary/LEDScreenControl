@@ -29,7 +29,7 @@ interface Entry {
   config: ProcessorConfig;
   driver?: Driver;
   view: ProcessorView;
-  loopsSeen: Map<number, string>;
+  loopsSeen: Map<string, string>;
   timer?: NodeJS.Timeout;
   inFlight?: AbortController;
   /** Added in code (the demo simulators) rather than from the settings, so a settings change leaves it alone. */

@@ -60,8 +60,15 @@ export interface FailoverStatus {
 }
 
 export interface CableLoop {
+  /** Tessera's loop number: one per pair of distribution boxes (Tessera 3.5.2 numbers them from 1). */
   index: number;
-  /** Raw state text from the processor, e.g. "loop-found: A1->B1". */
+  /** Stable key for this chain's loop: the loop number and the port it starts from, e.g. "2:C4". */
+  key: string;
+  /** The output port the chain starts from, e.g. "C4". Named even when the loop is lost. */
+  port?: string;
+  /** The port the loop comes back to, e.g. "D4", while it is found. */
+  to?: string;
+  /** Raw state text for this chain, e.g. "loop-found: A1->B1" or "no-loop-found: C1->No connection". */
   state: string;
   found: boolean;
 }

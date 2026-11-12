@@ -97,10 +97,9 @@ export function parseTessera(body: unknown): PolledData {
     inputs: parseInputs(obj(api.input)),
     genlock: str(genlock.source) ? { source: str(genlock.source)!, rate: num(genlock['internal-rate']) } : undefined,
     brightness: num(obj(output['global-colour']).brightness),
+    // Tessera says preset "0" with no name when no preset has been loaded since the project opened.
     preset:
-      num(activePreset.number) !== undefined
-        ? { number: num(activePreset.number)!, name: str(activePreset.name) ?? '' }
-        : undefined,
+      (num(activePreset.number) ?? 0) > 0 ? { number: num(activePreset.number)!, name: str(activePreset.name) ?? '' } : undefined,
     blackout: bool(obj(override.blackout).enabled),
     freeze: bool(obj(override.freeze).enabled),
     failover: parseFailover(obj(network.failover)),
@@ -137,13 +136,21 @@ function modelName(type: string | undefined): string | undefined {
   return MODEL_NAMES[type.toLowerCase()] ?? `Tessera ${type.toUpperCase()}`;
 }
 
-/** Tessera reports uptime as e.g. "50d 1215h 71607m 4294997s": the same span in several units. The seconds are the most precise. */
+/**
+ * Tessera 3.5.2 reports uptime as "2h 43m 1s" (parts that add up). Older releases were seen giving the same span in
+ * every unit, "50d 1215h 71607m 4294997s", where the seconds alone are the whole span. Both are read here.
+ */
 export function parseUptime(text: string | undefined): number | undefined {
   if (!text) return undefined;
-  const secs = /(\d+)s\b/.exec(text);
-  if (secs) return Number(secs[1]);
-  const days = /(\d+)d\b/.exec(text);
-  return days ? Number(days[1]) * 86400 : undefined;
+  const part = (u: string) => {
+    const m = new RegExp(`(\\d+)\\s*${u}\\b`).exec(text);
+    return m ? Number(m[1]) : undefined;
+  };
+  const [d, h, m, s] = [part('d'), part('h'), part('m'), part('s')];
+  if ([d, h, m, s].every((x) => x === undefined)) return undefined;
+  // Each unit repeating the whole span shows as an hours or minutes or seconds figure past its normal range.
+  if ((s ?? 0) >= 60 || (m ?? 0) >= 60 || (h ?? 0) >= 24) return s ?? (m !== undefined ? m * 60 : h !== undefined ? h * 3600 : (d ?? 0) * 86400);
+  return (d ?? 0) * 86400 + (h ?? 0) * 3600 + (m ?? 0) * 60 + (s ?? 0);
 }
 
 /** Flattens the nested temperature object, e.g. ethernet.sfp.a -> "Ethernet SFP A". */
@@ -207,7 +214,8 @@ function parseInputs(input: Tree): InputStatus[] {
       const rate = num(meta['refresh-rate']);
       // Tessera reports -1 for every field when nothing is plugged in or the signal is not locked.
       const signal = (width ?? -1) > 0 && (height ?? -1) > 0;
-      const number = Number(n);
+      // Ports are listed from "0", while the active source and the front panel count from 1 (seen on 3.5.2).
+      const number = Number(n) + 1;
       out.push({
         label: `${INPUT_TYPES[type] ?? type.toUpperCase()} ${number}`,
         key: `${type}:${number}`,
@@ -239,13 +247,24 @@ function parseFailover(f: Tree): FailoverStatus | undefined {
   };
 }
 
-function parseLoops(loops: Tree): CableLoop[] {
-  return entries(loops)
-    .map(([i, loop]) => {
-      const state = str(obj(loop).state) ?? '';
-      return { index: Number(i), state, found: state.startsWith('loop-found') };
-    })
-    .sort((a, b) => a.index - b.index);
+/**
+ * Tessera 3.5.2 has one loop entry per pair of distribution boxes, and its state lists every chain on it, e.g.
+ * "no-loop-found: C1->No connection, loop-found: C4->D4". Each chain becomes its own CableLoop, keyed by its port.
+ */
+export function parseLoops(loops: Tree): CableLoop[] {
+  const out: CableLoop[] = [];
+  for (const [i, loop] of entries(loops)) {
+    const index = Number(i);
+    const text = str(obj(loop).state) ?? '';
+    const parts = text.split(/,\s*(?=(?:no-)?loop-found)/i).map((x) => x.trim()).filter(Boolean);
+    parts.forEach((state, n) => {
+      const m = /^(no-)?loop-found:\s*([A-Za-z]+\d+)?\s*(?:->\s*([A-Za-z]+\d+))?/i.exec(state);
+      const found = !!m && !m[1];
+      const port = m?.[2]?.toUpperCase();
+      out.push({ index, key: `${index}:${port ?? `#${n}`}`, port, to: found ? m?.[3]?.toUpperCase() : undefined, state, found });
+    });
+  }
+  return out.sort((a, b) => a.index - b.index || (a.port ?? '').localeCompare(b.port ?? '', undefined, { numeric: true }));
 }
 
 function parseTiles(devices: Tree): TileSummary | undefined {

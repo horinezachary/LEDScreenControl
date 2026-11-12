@@ -155,8 +155,8 @@ function ProcessorCard({ p, now, go }: { p: ProcessorView; now: number; go: (pat
                 <caption>Cable loops</caption>
                 <tbody>
                   {p.loops.map((l) => (
-                    <tr key={l.index}>
-                      <th scope="row">Loop {l.index + 1}</th>
+                    <tr key={l.key}>
+                      <th scope="row">{l.port ? `Chain ${l.port}` : `Loop ${l.index}`}</th>
                       <td className="mono">{l.state}</td>
                     </tr>
                   ))}
