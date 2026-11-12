@@ -77,6 +77,22 @@ function check(s: ProcessorSnapshot, t: Thresholds): NewAlert[] {
     }
   }
 
+  // Processors that report their own topology (COEX): port loads, port faults and broken links between cabinets.
+  for (const g of s.topology?.groups ?? []) {
+    for (const c of g.chains) {
+      const load = c.from.load;
+      if (load && load.percent > 100) {
+        out.push({ key: `port-load:${c.id}`, rule: 'port-load', severity: 'critical', message: `${c.label} over capacity at ${Math.round(load.percent)}% (${load.pixels.toLocaleString('en-US')} pixels)` });
+      } else if (load && load.percent >= 90) {
+        out.push({ key: `port-load:${c.id}`, rule: 'port-load', severity: 'warning', message: `${c.label} at ${Math.round(load.percent)}% of capacity` });
+      }
+      if (c.from.state === 'lost') out.push({ key: `port:${c.id}`, rule: 'port', severity: 'critical', message: `${c.label} reports an output fault` });
+      if (c.notes.some((n) => n.startsWith('A cabinet reports the link'))) {
+        out.push({ key: `link:${c.id}`, rule: 'cabinet-link', severity: 'warning', message: `${c.label}: link between cabinets down` });
+      }
+    }
+  }
+
   const f = s.failover;
   if (f?.enabled) {
     if (f.partnerPresent === false) {

@@ -89,7 +89,7 @@ function ProcessorCard({ p, now }: { p: ProcessorView; now: number }) {
             )}
           </Fact>
           <Fact label="Redundancy">{failoverText(p)}</Fact>
-          <Fact label="Brightness">{p.brightness !== undefined ? `${p.brightness} nits` : '—'}</Fact>
+          <Fact label="Brightness">{p.brightness !== undefined ? (p.brightnessUnit === '%' ? `${Math.round(p.brightness)}%` : `${p.brightness} nits`) : '—'}</Fact>
           <Fact label="Preset">{p.preset ? `${p.preset.number} · ${p.preset.name}` : '—'}</Fact>
           <Fact label="Firmware">{p.firmware ?? '—'}</Fact>
           <Fact label="Uptime">{duration(p.uptimeSeconds)}</Fact>
