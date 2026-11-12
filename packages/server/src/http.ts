@@ -22,6 +22,21 @@ const FALLBACK_PAGE = `<!doctype html><meta charset="utf-8"><title>LED Monitor</
 <body style="font-family:system-ui;padding:40px;background:#0e1116;color:#e8ebf0"><div id="root">
 <h1>The dashboard is not built</h1><p>Run <code>scripts/build.sh</code>, then restart. The JSON state is at <a style="color:#7fb0ff" href="/api/state">/api/state</a>.</p></div>`;
 
+const sockets = new WeakMap<http.Server, WebSocketServer>();
+
+/**
+ * Stops the dashboard server and drops every connection, including open dashboard tabs' WebSockets. server.close()
+ * alone waits for those to end, which an open tab never does, so a restart would hang.
+ */
+export async function closeHttpServer(server: http.Server): Promise<void> {
+  const closed = new Promise<void>((resolve) => server.close(() => resolve()));
+  const wss = sockets.get(server);
+  for (const ws of wss?.clients ?? []) ws.terminate();
+  wss?.close();
+  server.closeAllConnections?.();
+  await closed;
+}
+
 export function createHttpServer(ctx: ApiContext, webRoot?: string): http.Server {
   const { monitor } = ctx;
   const root = webRoot && fs.existsSync(path.join(webRoot, 'index.html')) ? path.resolve(webRoot) : undefined;
@@ -48,6 +63,10 @@ export function createHttpServer(ctx: ApiContext, webRoot?: string): http.Server
   });
 
   const wss = new WebSocketServer({ server, path: '/ws' });
+  // ws re-emits the HTTP server's errors (a port already in use, for one). startServer reports those itself, so they
+  // must not also surface here as an unhandled 'error' event, which would crash the app.
+  wss.on('error', () => undefined);
+  sockets.set(server, wss);
   const send = (ws: WebSocket) => {
     if (ws.readyState !== ws.OPEN) return;
     const msg: ServerMessage = { type: 'state', state: monitor.state() };

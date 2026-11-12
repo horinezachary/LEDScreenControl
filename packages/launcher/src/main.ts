@@ -40,7 +40,9 @@ async function start(): Promise<void> {
   } catch (err) {
     running = undefined;
     if (err instanceof ConfigError) problem = `Settings problem: ${err.message}`;
-    else if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE') problem = 'The dashboard port is already in use. Change "port" in config.json.';
+    else if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE') {
+      problem = `Port ${readPort()} is already in use, perhaps by another copy of LED Monitor. Quit that, or change "port" in config.json (Open Settings Folder), then Restart Server.`;
+    }
     else problem = `Could not start: ${(err as Error).message}`;
   }
   buildMenu();
@@ -54,6 +56,16 @@ async function restart(): Promise<void> {
   await running?.close();
   running = undefined;
   await start();
+}
+
+/** The dashboard port from config.json, for messages. */
+function readPort(): number {
+  try {
+    const c = JSON.parse(fs.readFileSync(configPath(dataDir()), 'utf8')) as { port?: unknown };
+    return typeof c.port === 'number' ? c.port : 8080;
+  } catch {
+    return 8080;
+  }
 }
 
 function dashboardUrl(): string {
@@ -136,7 +148,7 @@ if (!app.requestSingleInstanceLock()) {
     await start();
     // Keep the status line in the menu current.
     refresh = setInterval(buildMenu, 5000);
-    if (problem && !fs.existsSync(configPath(dataDir()))) {
+    if (problem && (!fs.existsSync(configPath(dataDir())) || problem.includes('already in use'))) {
       dialog.showErrorBox('LED Monitor', problem);
     }
   });

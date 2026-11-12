@@ -76,6 +76,22 @@ describe('monitor', () => {
 });
 
 describe('server', () => {
+  it('reports a port in use instead of crashing, and closes with a dashboard tab open', async () => {
+    const first: RunningServer = await startServer({ dataDir: tmp(), port: 0, log: () => {} });
+    cleanups.push(() => first.close());
+    await expect(startServer({ dataDir: tmp(), port: first.port, log: () => {} })).rejects.toMatchObject({ code: 'EADDRINUSE' });
+    // An open tab keeps a WebSocket and a keep-alive connection; closing must not wait for them.
+    const ws = new WebSocket(`ws://127.0.0.1:${first.port}/ws`);
+    await new Promise((resolve, reject) => {
+      ws.on('message', resolve);
+      ws.on('error', reject);
+    });
+    await fetch(`http://127.0.0.1:${first.port}/api/state`);
+    const closed = await Promise.race([first.close().then(() => 'closed'), new Promise((r) => setTimeout(() => r('hung'), 3000))]);
+    expect(closed).toBe('closed');
+    cleanups.pop();
+  });
+
   it('picks a free port when asked for port 0', async () => {
     const running: RunningServer = await startServer({ dataDir: tmp(), port: 0, log: () => {} });
     cleanups.push(() => running.close());

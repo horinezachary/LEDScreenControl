@@ -4,7 +4,7 @@ import type http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { loadConfig, type Config } from './config.js';
 import { Monitor } from './monitor.js';
-import { createHttpServer } from './http.js';
+import { closeHttpServer, createHttpServer } from './http.js';
 import { demoWall, startDemoPair, type TesseraSimulator } from './sim/tessera.js';
 import { startDemoCoex, type CoexSimulator } from './sim/coex.js';
 import { startDemoVx, type VxSimulator } from './sim/vxpro.js';
@@ -106,8 +106,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
       await alerter.flush();
       alerter.stop();
       await syslog?.close();
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-      server.closeAllConnections?.();
+      await closeHttpServer(server);
       await Promise.all(simulators.map((s) => s.close()));
     },
   };
