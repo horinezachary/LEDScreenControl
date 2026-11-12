@@ -18,10 +18,11 @@ import { APP_VERSION } from './version.js';
 const PHASE_NOTE: Record<string, string> = {};
 
 
-export function driverFor(p: ProcessorConfig): Driver | undefined {
+/** dataDir keeps what a driver must remember across restarts (COEX error count resets). */
+export function driverFor(p: ProcessorConfig, dataDir?: string): Driver | undefined {
   if (p.kind === 'brompton') return bromptonDriver(p);
-  if (p.kind === 'coex') return coexDriver(p);
-  if (p.kind === 'vxpro') return vxproDriver(p);
+  if (p.kind === 'coex') return coexDriver(p, { dataDir });
+  if (p.kind === 'vxpro') return vxproDriver(p, { dataDir });
   return undefined;
 }
 
@@ -58,7 +59,7 @@ export class Monitor extends EventEmitter {
   constructor(
     private config: Config,
     dataDir?: string,
-    private driverFactory: (p: ProcessorConfig) => Driver | undefined = driverFor,
+    private driverFactory: (p: ProcessorConfig) => Driver | undefined = (p) => driverFor(p, dataDir),
   ) {
     super();
     this.events = new EventLog(dataDir);
@@ -333,6 +334,8 @@ function describe(req: ControlRequest, p: ProcessorView): string {
       return 'failover requested';
     case 'reboot':
       return 'reboot requested';
+    case 'resetErrors':
+      return 'receiving card error counts reset on the dashboard';
   }
 }
 

@@ -23,6 +23,8 @@ import type {
   TileSummary,
   TileView,
 } from '@ledmon/shared';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import type { Driver, PolledData } from './types.js';
 
 type Tree = Record<string, unknown>;
@@ -72,7 +74,54 @@ export interface CoexResponses {
   output?: unknown;
 }
 
-export function coexDriver(config: ProcessorConfig): Driver {
+/**
+ * Receiving card error counts as of a reset on the dashboard, by cabinet id. Errors up to these counts are not
+ * flagged; the processor's own counters are left alone.
+ */
+export interface ErrorBaseline {
+  counts: Map<string, number>;
+  /** When the counts were reset (ms since 1970). */
+  since?: number;
+}
+
+export interface CoexOptions {
+  /** Where the error count reset is kept so it survives a restart. Without it, only in memory. */
+  dataDir?: string;
+}
+
+/** Errors each receiving card has counted, by cabinet id: the sum of its errorBit values. */
+export function cardErrorCounts(monitor: unknown): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const c of list(obj(monitor).cabinets).map(obj)) {
+    const id = num(c.CabinetID ?? c.cabinetID);
+    if (id === undefined) continue;
+    const n = list(c.rvCards).reduce<number>((sum, card) => sum + list(obj(card).errorBit).reduce<number>((a, e) => a + Math.max(0, num(obj(e).value) ?? 0), 0), 0);
+    out.set(String(id), n);
+  }
+  return out;
+}
+
+function baselineFile(dataDir: string, id: string): string {
+  return path.join(dataDir, `coex-error-reset-${id.replace(/[^\w.-]/g, '_')}.json`);
+}
+
+function loadBaseline(dataDir: string | undefined, id: string): ErrorBaseline {
+  if (!dataDir) return { counts: new Map() };
+  try {
+    const raw = JSON.parse(readFileSync(baselineFile(dataDir, id), 'utf8')) as { counts?: Record<string, number>; since?: number };
+    return { counts: new Map(Object.entries(raw.counts ?? {}).filter(([, v]) => typeof v === 'number')), since: typeof raw.since === 'number' ? raw.since : undefined };
+  } catch {
+    return { counts: new Map() };
+  }
+}
+
+function saveBaseline(dataDir: string | undefined, id: string, b: ErrorBaseline): void {
+  if (!dataDir) return;
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(baselineFile(dataDir, id), JSON.stringify({ counts: Object.fromEntries(b.counts), since: b.since }, null, 1));
+}
+
+export function coexDriver(config: ProcessorConfig, opts: CoexOptions = {}): Driver {
   const base = `http://${config.host}:${config.port ?? 8001}`;
   const get = async (path: string, signal: AbortSignal) => {
     const res = await fetch(`${base}${path}`, { signal, headers: { accept: 'application/json' } });
@@ -86,15 +135,25 @@ export function coexDriver(config: ProcessorConfig): Driver {
   };
   // Controls address screens by id; the ids come from the last poll.
   let screens: { id: string; layer?: number }[] = [];
+  let baseline = loadBaseline(opts.dataDir, config.id);
+  let lastMonitor: unknown;
   return {
-    capabilities: { brightness: { min: 0, max: 100, step: 1, unit: '%' }, blackout: true, freeze: true, preset: true, input: true },
+    capabilities: { brightness: { min: 0, max: 100, step: 1, unit: '%' }, blackout: true, freeze: true, preset: true, input: true, resetErrors: true },
     async control(req, signal) {
+      if (req.action === 'resetErrors') {
+        // Only the dashboard forgets: nothing is sent to the processor.
+        if (lastMonitor === undefined) throw new Error('The processor has not been read yet. Try again after the next poll.');
+        baseline = { counts: cardErrorCounts(lastMonitor), since: Date.now() };
+        saveBaseline(opts.dataDir, config.id, baseline);
+        return;
+      }
       if (!screens.length) throw new Error('The processor has not reported its screens yet. Try again after the next poll.');
       for (const c of coexCommands(req, screens)) await send(c.method, c.path, c.body, signal);
     },
     async poll(signal) {
       // The device and monitor answers are needed; the rest fill in what they can.
       const [hw, monitor] = await Promise.all([get('/api/v1/device/hw', signal), get('/api/v1/device/monitor/info', signal)]);
+      lastMonitor = monitor;
       const optional = await Promise.allSettled([
         get('/api/v1/screen', signal),
         get('/api/v1/device/input/sources', signal),
@@ -106,7 +165,7 @@ export function coexDriver(config: ProcessorConfig): Driver {
       ]);
       const [screen, sources, displayParams, displayState, presets, backup, output] = optional.map((r) => (r.status === 'fulfilled' ? r.value : undefined));
       screens = screenTargets(screen);
-      return parseCoex({ hw, monitor, screen, sources, displayParams, displayState, presets, backup, output }, config.portCapacity);
+      return parseCoex({ hw, monitor, screen, sources, displayParams, displayState, presets, backup, output }, config.portCapacity, baseline);
     },
   };
 }
@@ -155,7 +214,7 @@ export function unwrap(body: unknown, path = ''): unknown {
 }
 
 /** configuredCapacity is the processor's portCapacity setting; without it the capacity comes from the processor. */
-export function parseCoex(r: CoexResponses, configuredCapacity?: number): PolledData {
+export function parseCoex(r: CoexResponses, configuredCapacity?: number, baseline: ErrorBaseline = { counts: new Map() }): PolledData {
   const hw = obj(r.hw);
   const mon = obj(r.monitor);
   const cabinetsLive = list(mon.cabinets).map(obj);
@@ -167,7 +226,7 @@ export function parseCoex(r: CoexResponses, configuredCapacity?: number): Polled
   const screens = list(obj(r.screen).screens).map(obj);
   const placed = screens.flatMap((s) => list(s.canvases).flatMap((cv) => list(obj(cv).cabinets).map(obj)));
 
-  const errors = cabinetsLive.filter((c) => cabinetFaults(c).length > 0).length;
+  const errors = cabinetsLive.filter((c) => cabinetFaults(c, baseline).length > 0).length;
   const tiles: TileSummary | undefined =
     placed.length || cabinetsLive.length
       ? {
@@ -200,7 +259,7 @@ export function parseCoex(r: CoexResponses, configuredCapacity?: number): Polled
     failover: parseBackup(obj(r.backup), mon),
     loops: [],
     tiles,
-    topology: screens.length ? parseTopology(screens, mon, liveById, portCapacity(hw, r.output, configuredCapacity)) : undefined,
+    topology: screens.length ? parseTopology(screens, mon, liveById, portCapacity(hw, r.output, configuredCapacity), baseline) : undefined,
   };
 }
 
@@ -325,7 +384,7 @@ function parseBackup(b: Tree, mon: Tree): FailoverStatus | undefined {
 }
 
 /** What is wrong with one cabinet according to the monitor answer, in words. Empty when it is healthy. */
-function cabinetFaults(c: Tree): string[] {
+function cabinetFaults(c: Tree, baseline: ErrorBaseline): string[] {
   const out: string[] = [];
   const box = obj(c.cabinet);
   if (bad(obj(box.temperature).status)) out.push(`cabinet temperature ${num(obj(box.temperature).value) ?? '?'} °C`);
@@ -336,10 +395,19 @@ function cabinetFaults(c: Tree): string[] {
   for (const card of list(c.rvCards).map(obj)) {
     if (bad(obj(card.temperature).status)) out.push(`receiving card temperature ${num(obj(card.temperature).value) ?? '?'} °C`);
     if (bad(obj(card.voltage).status)) out.push(`receiving card voltage ${num(obj(card.voltage).value) ?? '?'} V`);
-    if (list(card.errorBit).some((e) => bad(obj(e).status) || (num(obj(e).value) ?? 0) !== 0)) out.push('receiving card errors');
+    if (list(card.errorBit).some((e) => num(obj(e).value) === undefined && bad(obj(e).status))) out.push('receiving card errors');
     for (const m of list(card.moduleInfos).map(obj)) {
       if (bad(obj(m.temperature).status) || bad(obj(m.voltage).status)) out.push(`module ${str(m.moduleIndex) ?? '?'} fault`);
     }
+  }
+  // errorBit values are counters that only grow (a real CX40 Pro sets status 1 whenever one is above 0), so a cabinet
+  // is flagged for errors counted since the last reset on the dashboard.
+  const total = cardErrorCounts({ cabinets: [c] }).values().next().value ?? 0;
+  if (total > 0) {
+    const before = baseline.counts.get(String(num(c.CabinetID ?? c.cabinetID))) ?? 0;
+    // A count below the reset means the processor cleared its counters, so all of it is new.
+    const fresh = total >= before ? total - before : total;
+    if (fresh > 0) out.push(`${fresh} receiving card error${fresh === 1 ? '' : 's'}${baseline.since ? ' since the reset' : ''}`);
   }
   return [...new Set(out)];
 }
@@ -353,7 +421,7 @@ function portNumber(outputID: number): number {
   return outputID >= 256 ? (outputID & 0xff) + 1 : outputID + 1;
 }
 
-function parseTopology(screens: Tree[], mon: Tree, liveById: Map<number, Tree>, cap: PortCapacity): ProcessorTopology {
+function parseTopology(screens: Tree[], mon: Tree, liveById: Map<number, Tree>, cap: PortCapacity, baseline: ErrorBaseline): ProcessorTopology {
   const capacity = cap.pixels;
   const outputBad = new Set(list(mon.outputStatus).filter((o) => bad(obj(o).status)).map((o) => num(obj(o).outputID)));
   const portBad = new Set(list(mon.controllerPortMonitorInfos).filter((o) => bad(obj(o).status)).map((o) => num(obj(o).controllerPortID)));
@@ -376,7 +444,7 @@ function parseTopology(screens: Tree[], mon: Tree, liveById: Map<number, Tree>, 
         const tiles: TileView[] = ordered.map((c, i) => {
           const id = num(c.cabinetID) ?? i;
           const live = liveById.get(id);
-          const faults = live ? cabinetFaults(live) : [];
+          const faults = live ? cabinetFaults(live, baseline) : [];
           const sev: Severity = !live ? 'critical' : faults.length ? 'warning' : 'ok';
           // Real CX40 Pro answers keep readings on the receiving card and report 0 at the cabinet.
           const card = obj(list(live?.rvCards)[0]);
@@ -419,6 +487,7 @@ function parseTopology(screens: Tree[], mon: Tree, liveById: Map<number, Tree>, 
   });
   if (!groups.some((g) => g.chains.length)) notes.push('The processor reports no cabinets on its screens yet.');
   else notes.push(cap.basis);
+  if (baseline.since) notes.push(`Receiving card errors are counted from the reset on ${new Date(baseline.since).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}.`);
   // One screen gives the wall its name; several are shown as groups under the processor's name.
   return { name: screens.length === 1 ? str(screens[0].screenName) || undefined : undefined, groups, notes };
 }

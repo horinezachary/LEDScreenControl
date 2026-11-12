@@ -33,6 +33,8 @@ const CAB = 256;
 
 export class CoexSimulator {
   scenario: CoexScenario = 'normal';
+  /** Errors counted by the first cabinet's receiving card, a counter that only grows like a real one's. */
+  cardErrors = 0;
   /** Every control request received, for tests. The simulator applies brightness, display mode and presets. */
   readonly writes: { method: string; path: string; body: unknown }[] = [];
   brightness = 0.8;
@@ -232,7 +234,7 @@ export class CoexSimulator {
               cabinetIndex: c.index,
               temperature: { value: temp, status: hot ? 1 : 0 },
               voltage: { value: j(5, 0.1), status: 0 },
-              errorBit: [{ value: 0, type: 0, status: 0 }],
+              errorBit: [{ value: c.port === 0 && c.index === 0 ? this.cardErrors : 0, type: 0, status: c.port === 0 && c.index === 0 && this.cardErrors > 0 ? 1 : 0 }],
               backupStatus: { mode: 0, status: 0 },
               nextCabinetLinkStatus: { linkStatus: !linkDown, status: linkDown ? 1 : 0 },
             },

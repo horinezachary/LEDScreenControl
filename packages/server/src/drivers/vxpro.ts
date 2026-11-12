@@ -139,11 +139,13 @@ const COEX_RETRY_MS = 10 * 60_000;
 export interface VxOptions {
   /** HTTP port of the COEX Open API to try first; 0 skips it. */
   coexPort?: number;
+  /** Passed to the COEX driver, which keeps error count resets there. */
+  dataDir?: string;
 }
 
 export function vxproDriver(config: ProcessorConfig, opts: VxOptions = {}): Driver {
   const coexPort = opts.coexPort ?? 8001;
-  const coex = coexPort ? coexDriver({ ...config, port: coexPort }) : undefined;
+  const coex = coexPort ? coexDriver({ ...config, port: coexPort }, { dataDir: opts.dataDir }) : undefined;
   const tcpPort = config.port ?? VX_PORT;
   let mode: 'unknown' | 'coex' | 'tcp' = coex ? 'unknown' : 'tcp';
   let lastCoexTry = 0;

@@ -69,7 +69,8 @@ export function bromptonCommands(req: ControlRequest): [string, string][] {
     case 'failover':
       return [['output/network/failover/actions/request-failover', '']];
     case 'reboot':
-      return [['system/actions/reboot', '']];
+      return [['system/actions/reboot', '']];    default:
+      throw new Error(`Tessera processors do not take "${req.action}" from this dashboard.`);
   }
 }
 

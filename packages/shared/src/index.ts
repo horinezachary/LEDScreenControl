@@ -132,6 +132,11 @@ export interface ControlCapabilities {
   input?: boolean;
   failover?: boolean;
   reboot?: boolean;
+  /**
+   * Receiving card error counts can be reset on the dashboard: only errors counted after the reset are flagged.
+   * Nothing is sent to the processor; its own counters keep running.
+   */
+  resetErrors?: boolean;
 }
 
 export type ControlRequest =
@@ -141,7 +146,8 @@ export type ControlRequest =
   | { action: 'preset'; value: number }
   | { action: 'input'; value: string }
   | { action: 'failover' }
-  | { action: 'reboot' };
+  | { action: 'reboot' }
+  | { action: 'resetErrors' };
 
 /** Actions that change what is on the wall in a big way; the dashboard asks to confirm them, naming the processor. */
 export const CONFIRM_ACTIONS: ControlRequest['action'][] = ['blackout', 'failover', 'input', 'reboot'];

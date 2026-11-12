@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { parseConfig } from '../src/config.js';
 import { Monitor } from '../src/monitor.js';
 import { CoexSimulator, type CoexScenario } from '../src/sim/coex.js';
-import { parseCoex, unwrap } from '../src/drivers/coex.js';
+import { cardErrorCounts, parseCoex, unwrap } from '../src/drivers/coex.js';
 
 const cleanups: (() => Promise<void>)[] = [];
 afterEach(async () => {
@@ -134,6 +136,43 @@ describe('a real CX40 Pro with 5G ports', () => {
   it('labels cabinets by port and chain position, with the receiving card temperature', () => {
     const tile = chainsOf(parseCoex(fx))[0].tiles[0];
     expect(tile.label).toBe('Port 1, cabinet 1');
-    expect(tile.detail).toMatch(/41 °C|receiving card errors/);
+    expect(tile.detail).toBe('1 receiving card error');
+  });
+});
+
+describe('resetting receiving card error counts', () => {
+  it('flags only errors counted since the reset, and remembers the reset after a restart', async () => {
+    const sim = new CoexSimulator({ name: 'IMAG Left', serial: '7', seed: 4 });
+    const port = await sim.listen();
+    cleanups.push(() => sim.close());
+    const dataDir = mkdtempSync(path.join(os.tmpdir(), 'ledmon-coex-'));
+    const config = parseConfig({ requestTimeoutMs: 1000, processors: [{ id: 'imag', kind: 'coex', host: '127.0.0.1', port }] });
+    const monitor = new Monitor(config, dataDir);
+    sim.cardErrors = 5;
+    let p = await monitor.pollOnce('imag');
+    expect(p.alerts.map((a) => a.key)).toContain('tile-errors');
+    expect(p.controls?.resetErrors).toBe(true);
+
+    p = await monitor.control('imag', { action: 'resetErrors' }, 'test');
+    expect(p.alerts.map((a) => a.key)).not.toContain('tile-errors');
+    expect(sim.writes).toHaveLength(0);
+    expect(monitor.events.recent().some((e) => /error counts reset/.test(e.message))).toBe(true);
+
+    // A new monitor (the app restarted) still knows about the reset.
+    sim.cardErrors = 7;
+    const again = new Monitor(config, dataDir);
+    p = await again.pollOnce('imag');
+    expect(p.alerts.map((a) => a.key)).toContain('tile-errors');
+    const tile = again.wallViews()[0].groups[0].chains[0].tiles[0];
+    expect(tile.detail).toBe('2 receiving card errors since the reset');
+  });
+
+  it('counts everything again when the processor clears its own counters', () => {
+    const fx = JSON.parse(readFileSync(new URL('./fixtures/coex-cx40pro-5g.json', import.meta.url), 'utf8'));
+    const counts = cardErrorCounts(fx.monitor);
+    expect([...counts.values()].filter((n) => n > 0)).toHaveLength(17);
+    expect(parseCoex(fx, undefined, { counts, since: Date.now() }).tiles?.errors).toBe(0);
+    const raised = new Map(counts).set('7402938792148992', 100);
+    expect(parseCoex(fx, undefined, { counts: raised, since: Date.now() }).tiles?.errors).toBe(1);
   });
 });
