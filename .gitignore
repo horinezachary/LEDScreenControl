@@ -1,0 +1,8 @@
+node_modules/
+dist/
+release/
+data/
+ci-data/
+*.log
+.DS_Store
+packages/launcher/app/
