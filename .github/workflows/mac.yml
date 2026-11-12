@@ -19,6 +19,15 @@ jobs:
           node-version: 22
       - name: Build and package
         run: scripts/build.sh mac
+        env:
+          # The app is signed ad hoc (no certificate, no secrets), so signing on pull requests is safe.
+          CSC_FOR_PULL_REQUEST: 'true'
+      - name: Check the app is signed as LED Monitor and asks for local network access
+        run: |
+          app="$(ls -d packages/launcher/release/mac-universal/*.app | head -n1)"
+          codesign -dv "$app" 2>&1 | tee /dev/stderr | grep -q 'Identifier=com.horinetech.ledmonitor'
+          codesign --verify --deep --strict "$app"
+          /usr/libexec/PlistBuddy -c 'Print :NSLocalNetworkUsageDescription' "$app/Contents/Info.plist"
       - uses: actions/upload-artifact@v4
         with:
           name: LED Monitor (macOS)
