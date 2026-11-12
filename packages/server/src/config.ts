@@ -68,7 +68,7 @@ export const DEFAULT_CONFIG: Config = {
   email: DEFAULT_EMAIL,
 };
 
-const KINDS: ProcessorKind[] = ['brompton', 'coex', 'vxpro'];
+const KINDS: ProcessorKind[] = ['brompton', 'coex', 'vxpro', 'device'];
 
 export class ConfigError extends Error {}
 

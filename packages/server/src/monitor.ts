@@ -8,6 +8,7 @@ import type { Driver } from './drivers/types.js';
 import { bromptonDriver } from './drivers/brompton.js';
 import { vxproDriver } from './drivers/vxpro.js';
 import { coexDriver } from './drivers/coex.js';
+import { deviceDriver } from './drivers/device.js';
 import { EventLog } from './events.js';
 import { History } from './history.js';
 import type { AlertChange } from './alerter.js';
@@ -23,6 +24,7 @@ export function driverFor(p: ProcessorConfig, dataDir?: string): Driver | undefi
   if (p.kind === 'brompton') return bromptonDriver(p);
   if (p.kind === 'coex') return coexDriver(p, { dataDir });
   if (p.kind === 'vxpro') return vxproDriver(p, { dataDir });
+  if (p.kind === 'device') return deviceDriver(p);
   return undefined;
 }
 

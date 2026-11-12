@@ -183,6 +183,7 @@ const KINDS: { value: ProcessorKind; label: string }[] = [
   { value: 'brompton', label: 'Brompton Tessera' },
   { value: 'coex', label: 'NovaStar COEX' },
   { value: 'vxpro', label: 'NovaStar VX Pro' },
+  { value: 'device', label: 'Other device (answers or not)' },
 ];
 
 function Processors({ draft, update, subnets }: Edit & { subnets: string[] }) {

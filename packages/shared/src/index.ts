@@ -1,7 +1,8 @@
 // Types shared by the server and the dashboard. Every processor brand is turned into a ProcessorSnapshot by its driver,
 // so the dashboard never needs to know which brand it is drawing.
 
-export type ProcessorKind = 'brompton' | 'coex' | 'vxpro';
+/** device: anything else on the network (a fiber converter, a switch), only checked for an answer. */
+export type ProcessorKind = 'brompton' | 'coex' | 'vxpro' | 'device';
 
 /** Worst first, so severities can be compared by index. */
 export const SEVERITY_ORDER = ['critical', 'warning', 'unknown', 'ok'] as const;

@@ -27,6 +27,8 @@ Design: [LED Processor Monitor: Design](https://claude.ai/artifact/Tk6LkG374Yuy8
   reports (a CX40 Pro's 5G ports: 3,250,000), scaled by its output frame rate. Set `"portCapacity"` on the processor
   to override it, for example at 10 or 12 bit. Alerts for ports at 90% and over 100%, output faults, cabinets that stop answering
   or report faults, and broken links between cabinets.
+- Other devices (kind `"device"`), such as a NovaStar fiber converter: only checked for an answer on their port (80
+  unless set), so the dashboard shows when one drops off the network.
 - Processor syslog: point Tessera's syslog at this machine (UDP 5514) and every line lands in the event log under
   the processor that sent it. This is how Tessera reports things its API does not, such as genlock loss.
 - Settings page (`/settings`), behind one password: processors (with a network scan that only asks read-only

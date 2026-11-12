@@ -191,6 +191,6 @@ function failoverText(p: ProcessorView): React.ReactNode {
 }
 
 export function kindName(kind: ProcessorView['kind']): string {
-  return { brompton: 'Brompton', coex: 'NovaStar COEX', vxpro: 'NovaStar VX Pro' }[kind];
+  return { brompton: 'Brompton', coex: 'NovaStar COEX', vxpro: 'NovaStar VX Pro', device: 'Network device' }[kind];
 }
 
