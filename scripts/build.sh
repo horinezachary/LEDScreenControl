@@ -51,8 +51,11 @@ case "$mode" in
     # electron-builder wants a plain semver: v1.2.3 -> 1.2.3, v1.2.3-dev stays a prerelease, "dev" becomes 0.0.0-dev.
     semver="${APP_VERSION#v}"
     [[ "$semver" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] || semver="0.0.0-dev"
+    # npm workspaces install Electron at the repo root, where electron-builder does not look, so name the version.
+    electron="$(node -p "require('electron/package.json').version")"
     npm run build -w @ledmon/launcher
-    (cd packages/launcher && npx electron-builder --mac --publish never -c.extraMetadata.version="$semver")
+    (cd packages/launcher && npx electron-builder --mac --publish never \
+      -c.electronVersion="$electron" -c.extraMetadata.version="$semver")
     dmg="$(ls -t packages/launcher/release/*.dmg | head -n1)"
     say "Built $dmg"
     ;;
