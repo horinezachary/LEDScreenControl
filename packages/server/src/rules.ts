@@ -1,0 +1,109 @@
+// Health rules: turn a snapshot into alerts. Each alert has a stable key, so the monitor can tell a new problem from
+// one that is still going, and keep the time it started.
+import type { Alert, ProcessorSnapshot, Severity } from '@ledmon/shared';
+import { worstSeverity } from '@ledmon/shared';
+import type { Thresholds } from './config.js';
+
+export type NewAlert = Omit<Alert, 'since'>;
+
+export function evaluate(
+  snap: ProcessorSnapshot,
+  thresholds: Thresholds,
+  previous: Alert[] = [],
+  now = Date.now(),
+  extra: NewAlert[] = [],
+): { alerts: Alert[]; severity: Severity } {
+  const found = [...check(snap, thresholds), ...extra];
+  const before = new Map(previous.map((a) => [a.key, a]));
+  const alerts = found.map((a) => ({ ...a, since: before.get(a.key)?.since ?? now }));
+  if (!snap.reachable && snap.lastSeen === undefined && snap.missedPolls === 0) {
+    // Never polled yet.
+    return { alerts, severity: 'unknown' };
+  }
+  return { alerts, severity: worstSeverity(alerts.map((a) => a.severity)) };
+}
+
+function check(s: ProcessorSnapshot, t: Thresholds): NewAlert[] {
+  const out: NewAlert[] = [];
+
+  if (!s.reachable) {
+    if (s.missedPolls >= t.unreachableAfterPolls) {
+      out.push({ key: 'unreachable', rule: 'unreachable', severity: 'critical', message: `Not responding (${s.lastError ?? 'no answer'})` });
+    } else if (s.missedPolls > 0) {
+      out.push({ key: 'unreachable', rule: 'unreachable', severity: 'warning', message: `Missed ${s.missedPolls} poll${s.missedPolls === 1 ? '' : 's'}` });
+    }
+    // Everything else is stale while it is unreachable, so it is not judged.
+    return out;
+  }
+
+  const active = s.inputs.find((i) => i.active);
+  if (active && !active.signal) {
+    out.push({ key: 'signal', rule: 'signal', severity: 'critical', message: `No signal on the active input (${active.label})` });
+  }
+
+  for (const r of s.temperatures) {
+    if (r.value >= t.tempCritC) {
+      out.push({ key: `temp:${r.key}`, rule: 'temperature', severity: 'critical', message: `${r.label} at ${r.value.toFixed(1)} °C (limit ${t.tempCritC} °C)` });
+    } else if (r.value >= t.tempWarnC) {
+      out.push({ key: `temp:${r.key}`, rule: 'temperature', severity: 'warning', message: `${r.label} at ${r.value.toFixed(1)} °C (warning at ${t.tempWarnC} °C)` });
+    }
+  }
+
+  for (const f of s.fans) {
+    if (!f.running) {
+      out.push({ key: `fan:${f.key}`, rule: 'fan', severity: 'critical', message: `${f.label} has stopped` });
+    } else if (t.fanMinRpm > 0 && f.rpm !== undefined && f.rpm < t.fanMinRpm) {
+      out.push({ key: `fan:${f.key}`, rule: 'fan', severity: 'warning', message: `${f.label} slow at ${Math.round(f.rpm)} RPM` });
+    }
+  }
+
+  if (s.tiles && s.tiles.associated > 0) {
+    const offline = s.tiles.associated - s.tiles.online;
+    if (offline > 0) {
+      const pct = (offline / s.tiles.associated) * 100;
+      out.push({
+        key: 'tiles-offline',
+        rule: 'tiles',
+        severity: pct >= t.tilesOfflineCritPercent ? 'critical' : 'warning',
+        message: `${offline} of ${s.tiles.associated} tiles offline`,
+      });
+    }
+    if (s.tiles.errors > 0) {
+      out.push({ key: 'tile-errors', rule: 'tiles', severity: 'warning', message: `${s.tiles.errors} tile${s.tiles.errors === 1 ? '' : 's'} reporting errors` });
+    }
+    const versions = Object.keys(s.tiles.firmware);
+    if (versions.length > 1) {
+      out.push({ key: 'tile-firmware', rule: 'firmware', severity: 'warning', message: `Tiles on ${versions.length} firmware versions: ${versions.join(', ')}` });
+    }
+  }
+
+  const f = s.failover;
+  if (f?.enabled) {
+    if (f.partnerPresent === false) {
+      out.push({ key: 'partner', rule: 'failover', severity: 'warning', message: `Redundant partner ${f.partnerName ?? ''} not seen`.replace(/\s+/g, ' ').trim() });
+    }
+    if (f.active && f.role === 'primary') {
+      out.push({ key: 'failover-active', rule: 'failover', severity: 'critical', message: 'Failover active: the backup processor is driving the wall' });
+    } else if (f.active && f.role === 'backup') {
+      out.push({ key: 'failover-active', rule: 'failover', severity: 'warning', message: 'This backup processor is driving the wall' });
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Cable loops need memory: Tessera lists every possible loop, and most say "no-loop-found" because nothing is cabled
+ * that way. Only a loop that was found earlier and is now lost is a problem.
+ */
+export function loopAlerts(s: ProcessorSnapshot, everFound: Set<number>): NewAlert[] {
+  if (!s.reachable) return [];
+  const out: NewAlert[] = [];
+  for (const loop of s.loops) {
+    if (loop.found) everFound.add(loop.index);
+    else if (everFound.has(loop.index)) {
+      out.push({ key: `loop:${loop.index}`, rule: 'cable-loop', severity: 'warning', message: `Cable loop ${loop.index + 1} broken (${loop.state})` });
+    }
+  }
+  return out;
+}

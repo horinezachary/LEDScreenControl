@@ -1,0 +1,21 @@
+{
+  "name": "led-screen-control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monitoring and control dashboard for Brompton and NovaStar LED processors on one show network",
+  "engines": { "node": ">=22" },
+  "workspaces": ["packages/shared", "packages/server", "packages/web", "packages/launcher"],
+  "scripts": {
+    "build": "npm run build -w @ledmon/web && npm run build -w @ledmon/server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "dev": "npm run dev -w @ledmon/server"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}
