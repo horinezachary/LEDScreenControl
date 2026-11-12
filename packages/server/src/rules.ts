@@ -96,13 +96,17 @@ function check(s: ProcessorSnapshot, t: Thresholds): NewAlert[] {
  * Cable loops need memory: Tessera lists every possible loop, and most say "no-loop-found" because nothing is cabled
  * that way. Only a loop that was found earlier and is now lost is a problem.
  */
-export function loopAlerts(s: ProcessorSnapshot, everFound: Set<number>): NewAlert[] {
+export function loopAlerts(s: ProcessorSnapshot, everFound: Map<number, string>): NewAlert[] {
   if (!s.reachable) return [];
   const out: NewAlert[] = [];
   for (const loop of s.loops) {
-    if (loop.found) everFound.add(loop.index);
-    else if (everFound.has(loop.index)) {
-      out.push({ key: `loop:${loop.index}`, rule: 'cable-loop', severity: 'warning', message: `Cable loop ${loop.index + 1} broken (${loop.state})` });
+    if (loop.found) {
+      // "loop-found: A1->B1" names the ports; a lost loop no longer does, so remember them.
+      const ports = /loop-found:\s*(\S+)/.exec(loop.state)?.[1];
+      everFound.set(loop.index, ports ?? `${loop.index + 1}`);
+    } else if (everFound.has(loop.index)) {
+      const name = everFound.get(loop.index)!.replace('->', ' to ');
+      out.push({ key: `loop:${loop.index}`, rule: 'cable-loop', severity: 'warning', message: `Cable loop ${name} broken (${loop.state})` });
     }
   }
   return out;

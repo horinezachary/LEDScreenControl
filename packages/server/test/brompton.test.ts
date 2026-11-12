@@ -23,8 +23,9 @@ describe('parseTessera', () => {
     expect(d.inputs.find((i) => i.label === 'SDI 2')).toMatchObject({ signal: false, width: undefined });
     expect(d.failover).toMatchObject({ enabled: true, role: 'primary', active: false, partnerPresent: true, partnerName: 'Stage Backup' });
     expect(d.loops[0]).toEqual({ index: 0, state: 'loop-found: A1->B1', found: true });
-    expect(d.loops[2].found).toBe(false);
-    expect(d.tiles).toEqual({ associated: 640, online: 640, errors: 0, firmware: { '3.5.2': 2 } });
+    expect(d.loops).toHaveLength(20);
+    expect(d.devices?.map((x) => x.id)).toEqual(['XD-A-DEMO', 'XD-B-DEMO', 'XD-C-DEMO', 'XD-D-DEMO']);
+    expect(d.tiles).toEqual({ associated: 160, online: 160, errors: 0, firmware: { '3.5.2': 1 } });
     expect(d.preset).toEqual({ number: 1, name: 'Show Config' });
     expect(d.genlock).toEqual({ source: 'input', rate: 59.94 });
     expect(d.blackout).toBe(false);
