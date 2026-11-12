@@ -7,7 +7,7 @@ server, so nothing else needs installing.
 
 Design: [LED Processor Monitor: Design](https://claude.ai/artifact/Tk6LkG374Yuy8QKAyFK9Bs).
 
-## What works today (phases 1 to 3)
+## What works today (phases 1 to 4)
 
 - Brompton Tessera processors over their HTTP IP control API (checked against Tessera 3.5.2): temperatures, fans,
   inputs and signal, genlock source, brightness, preset, blackout and freeze, failover role and partner, cable loops,
@@ -28,10 +28,26 @@ Design: [LED Processor Monitor: Design](https://claude.ai/artifact/Tk6LkG374Yuy8
   or report faults, and broken links between cabinets.
 - Processor syslog: point Tessera's syslog at this machine (UDP 5514) and every line lands in the event log under
   the processor that sent it. This is how Tessera reports things its API does not, such as genlock loss.
+- Settings page (`/settings`), behind one password: processors (with a network scan that only asks read-only
+  identity questions), Brompton wall layouts, alert limits, email, and general options. Changes apply without a
+  restart. Viewing and controls stay open to everyone on the network.
+- A page per processor (click its name): controls, every input, output and redundancy detail, its events, and charts
+  of each temperature, fan, port load, brightness and tile count over the last hour, 24 hours or 7 days.
+- Controls: brightness, preset, input, blackout, freeze, request failover and reboot. Blackout, failover, input changes
+  and reboot ask a second time, naming the processor. Every control action goes in the event log with the address it
+  came from. COEX processors offer brightness, preset, input, blackout and freeze.
+- Email alerts over SMTP: new problems are batched for a few seconds into one email, a recovery email follows, and the
+  same problem is not repeated within the repeat time. A test button checks the settings.
 - The Mac menu bar app.
 - A simulator for two SX40s (a primary and its backup) with faults you can switch on.
 
-Read-only: nothing sends a control command to a processor yet. VX2000 Pro processors show as "not supported yet".
+Controls have only been tried against the simulators. To keep the dashboard read-only, turn off "Processor controls"
+in Settings → General (or set `"controls": false` in `config.json`). VX2000 Pro processors show as "not supported yet".
+
+The settings password is set the first time Settings is opened, and only from the machine running the monitor. It is
+stored as a scrypt hash in `auth.json` in the settings folder; delete that file to set a new one if it is forgotten.
+An unlocked browser stays unlocked for 30 minutes after its last use. History is kept in `history.json` (raw readings
+for an hour, one-minute averages for a day, ten-minute averages for a week).
 
 COEX caveats: NovaStar documents the field names but not their units or what each status number means. The driver
 assumes °C, volts, brightness from 0 to 1 and status 0 as normal; check these against a real processor. COEX refuses
@@ -57,8 +73,10 @@ scripts/deploy.sh headless      # build and keep it running under pm2 as "led-mo
 
 ## Add processors
 
-Enable IP control on each processor first (Tessera: the IP Control application). Then use **Open Settings Folder** in
-the app (or `data/` when running headless), edit `config.json`, and choose **Restart Server**:
+Enable IP control on each processor first (Tessera: the IP Control application). Then add them on the Settings page
+(**Open Settings** in the app menu), or scan the network for them there. The settings live in `config.json` in the
+settings folder (**Open Settings Folder**, or `data/` when running headless); after editing that file by hand, choose
+**Restart Server**:
 
 ```json
 {
@@ -72,11 +90,13 @@ the app (or `data/` when running headless), edit `config.json`, and choose **Res
 
 `kind` is `brompton`, `coex` or `vxpro`. `name` is optional (the processor's own name is used). Alert limits can be
 changed under `"thresholds"`: `tempWarnC`, `tempCritC`, `fanMinRpm`, `tilesOfflineCritPercent`, `unreachableAfterPolls`.
-`"syslogPort"` (default 5514, 0 for off) is where processors send syslog.
+`"syslogPort"` (default 5514, 0 for off) is where processors send syslog. `portLoadWarnPercent` (default 90) sets the
+COEX port load warning. Email settings are easiest to fill in on the Settings page.
 
 ### Describe a Brompton wall
 
-Tessera does not report where its tiles are, so each Brompton wall is described once. Give each processor an `id`,
+Tessera does not report where its tiles are, so each Brompton wall is described once, on the Settings page under
+Walls or in `config.json`. Give each processor an `id`,
 then add a wall naming the primary and backup, and for each pair of XD boxes the number of tiles on each port's chain
 (port 1 first, 0 for an empty port). A chain runs from port N on the left box to port N on the right box, as a
 cable loop:

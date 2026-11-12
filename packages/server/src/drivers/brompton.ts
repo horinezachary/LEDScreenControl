@@ -1,10 +1,12 @@
 // Brompton Tessera (SX40, S8 and others) over its HTTP IP control API, checked against Tessera 3.5.2.
 //
 // GET http://<ip>/api/ returns the whole property tree as JSON under a top-level "api" key, and the driver reads
-// everything it needs from that one request. Writes are GET /api/<path>?set=<value>; this phase is read-only, so the
-// driver sends none. The tree's shape is documented by the processor itself at /api/?help=1.
+// everything it needs from that one request. Writes are GET /api/<path>?set=<value>, as the Bitfocus Companion module
+// for Tessera sends them; the paths below come from that module. The tree's shape is documented by the processor
+// itself at /api/?help=1.
 import type {
   CableLoop,
+  ControlRequest,
   DeviceInfo,
   FailoverStatus,
   FanStatus,
@@ -19,6 +21,10 @@ type Tree = Record<string, unknown>;
 
 export function bromptonDriver(config: ProcessorConfig): Driver {
   const base = `http://${config.host}:${config.port ?? 80}`;
+  const set = async (path: string, value: string, signal: AbortSignal) => {
+    const res = await fetch(`${base}/api/${path}?set=${encodeURIComponent(value)}`, { signal });
+    if (!res.ok) throw new Error(`The processor refused ${path} (HTTP ${res.status}).`);
+  };
   return {
     async poll(signal) {
       const res = await fetch(`${base}/api/`, { signal, headers: { accept: 'application/json' } });
@@ -26,7 +32,45 @@ export function bromptonDriver(config: ProcessorConfig): Driver {
       const body = (await res.json()) as unknown;
       return parseTessera(body);
     },
+    capabilities: {
+      brightness: { min: 0, max: 10000, step: 50, unit: 'nits' },
+      blackout: true,
+      freeze: true,
+      preset: true,
+      input: true,
+      failover: true,
+      reboot: true,
+    },
+    async control(req, signal) {
+      for (const [path, value] of bromptonCommands(req)) await set(path, value, signal);
+    },
   };
+}
+
+/** The ?set= requests for one control, in the order they are sent. */
+export function bromptonCommands(req: ControlRequest): [string, string][] {
+  switch (req.action) {
+    case 'brightness':
+      return [['output/global-colour/brightness', String(Math.round(req.value))]];
+    case 'blackout':
+      return [['override/blackout/enabled', String(req.value)]];
+    case 'freeze':
+      return [['override/freeze/enabled', String(req.value)]];
+    case 'preset':
+      return [['presets/active/number', String(Math.round(req.value))]];
+    case 'input': {
+      const [type, number] = req.value.split(':');
+      if (!type || !number || !/^\d+$/.test(number)) throw new Error(`Unknown input "${req.value}".`);
+      return [
+        ['input/active/source/port-type', type],
+        ['input/active/source/port-number', number],
+      ];
+    }
+    case 'failover':
+      return [['output/network/failover/actions/request-failover', '']];
+    case 'reboot':
+      return [['system/actions/reboot', '']];
+  }
 }
 
 /** Turns a Tessera /api/ response into the shared snapshot shape. Missing parts are left out rather than guessed. */
@@ -63,6 +107,10 @@ export function parseTessera(body: unknown): PolledData {
     loops: parseLoops(obj(obj(network['cable-redundancy']).loops)),
     tiles: parseTiles(obj(api.devices)),
     devices: parseBoxes(obj(api.devices)),
+    presets: entries(presets.items)
+      .map(([n, p]) => ({ number: num(obj(p).number) ?? Number(n), name: str(obj(p).name) ?? `Preset ${n}` }))
+      .filter((p) => Number.isFinite(p.number))
+      .sort((a, b) => a.number - b.number),
   };
 }
 
@@ -162,6 +210,7 @@ function parseInputs(input: Tree): InputStatus[] {
       const number = Number(n);
       out.push({
         label: `${INPUT_TYPES[type] ?? type.toUpperCase()} ${number}`,
+        key: `${type}:${number}`,
         type,
         number,
         active: type === activeType && number === activeNumber,

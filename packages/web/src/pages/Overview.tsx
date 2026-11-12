@@ -1,7 +1,8 @@
 import type { DashboardState, ProcessorView } from '@ledmon/shared';
 import { ago, duration, rate, SEVERITY_LABEL } from '../format';
+import { linkHandler, processorPath } from '../route';
 
-export function Overview({ state, now }: { state: DashboardState; now: number }) {
+export function Overview({ state, now, go }: { state: DashboardState; now: number; go: (path: string) => void }) {
   return state.processors.length === 0 ? (
     <div className="card empty-card">
       <h2>No processors yet</h2>
@@ -13,13 +14,13 @@ export function Overview({ state, now }: { state: DashboardState; now: number })
   ) : (
     <>
       {state.processors.map((p) => (
-        <ProcessorCard key={p.id} p={p} now={now} />
+        <ProcessorCard key={p.id} p={p} now={now} go={go} />
       ))}
     </>
   );
 }
 
-function ProcessorCard({ p, now }: { p: ProcessorView; now: number }) {
+function ProcessorCard({ p, now, go }: { p: ProcessorView; now: number; go: (path: string) => void }) {
   const active = p.inputs.find((i) => i.active);
   const hottest = [...p.temperatures].sort((a, b) => b.value - a.value)[0];
   const fansOk = p.fans.filter((f) => f.running).length;
@@ -29,7 +30,11 @@ function ProcessorCard({ p, now }: { p: ProcessorView; now: number }) {
     <article className={`card proc sev-border-${p.severity}`} aria-label={p.name}>
       <div className="proc-head">
         <div>
-          <h2>{p.name}</h2>
+          <h2>
+            <a href={processorPath(p.id)} onClick={linkHandler(go, processorPath(p.id))}>
+              {p.name}
+            </a>
+          </h2>
           <div className="sub">
             {p.model ?? kindName(p.kind)} · <span className="mono">{p.host}</span>
             {p.serial && <> · SN {p.serial}</>}

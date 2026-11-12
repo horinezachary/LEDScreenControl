@@ -10,6 +10,7 @@
 // drawn from the processor itself, with a port load worked out from the cabinets on each port.
 import type {
   ChainView,
+  ControlRequest,
   FailoverStatus,
   FanStatus,
   GroupView,
@@ -47,7 +48,19 @@ export function coexDriver(config: ProcessorConfig): Driver {
     if (!res.ok) throw new Error(`HTTP ${res.status} from ${path}`);
     return unwrap((await res.json()) as unknown, path);
   };
+  const send = async (method: 'PUT' | 'POST', path: string, body: unknown, signal: AbortSignal) => {
+    const res = await fetch(`${base}${path}`, { method, signal, headers: { 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`The processor refused ${path} (HTTP ${res.status}).`);
+    unwrap((await res.json().catch(() => ({}))) as unknown, path);
+  };
+  // Controls address screens by id; the ids come from the last poll.
+  let screens: { id: string; layer?: number }[] = [];
   return {
+    capabilities: { brightness: { min: 0, max: 100, step: 1, unit: '%' }, blackout: true, freeze: true, preset: true, input: true },
+    async control(req, signal) {
+      if (!screens.length) throw new Error('The processor has not reported its screens yet. Try again after the next poll.');
+      for (const c of coexCommands(req, screens)) await send(c.method, c.path, c.body, signal);
+    },
     async poll(signal) {
       // The device and monitor answers are needed; the rest fill in what they can.
       const [hw, monitor] = await Promise.all([get('/api/v1/device/hw', signal), get('/api/v1/device/monitor/info', signal)]);
@@ -60,9 +73,47 @@ export function coexDriver(config: ProcessorConfig): Driver {
         get('/api/v1/device/backup', signal),
       ]);
       const [screen, sources, displayParams, displayState, presets, backup] = optional.map((r) => (r.status === 'fulfilled' ? r.value : undefined));
+      screens = screenTargets(screen);
       return parseCoex({ hw, monitor, screen, sources, displayParams, displayState, presets, backup }, config.portCapacity ?? DEFAULT_PORT_CAPACITY);
     },
   };
+}
+
+function screenTargets(screen: unknown): { id: string; layer?: number }[] {
+  return list(obj(screen).screens)
+    .map(obj)
+    .filter((s) => str(s.screenID))
+    .map((s) => {
+      const mode = list(s.layersInWorkingMode)[0];
+      const layer = obj(list(obj(mode).layers)[0] ?? mode);
+      return { id: str(s.screenID)!, layer: num(layer.id) };
+    });
+}
+
+/**
+ * The requests for one control, from NovaStar's API docs and the @novastar-dev/coex client: brightness 0 to 100,
+ * display mode 0 normal, 1 blackout, 2 freeze. Turning blackout or freeze off sets the display back to normal.
+ */
+export function coexCommands(req: ControlRequest, screens: { id: string; layer?: number }[]): { method: 'PUT' | 'POST'; path: string; body: unknown }[] {
+  const ids = screens.map((s) => s.id);
+  switch (req.action) {
+    case 'brightness':
+      return [{ method: 'PUT', path: '/api/v1/screen/brightness', body: { screenIdList: ids, brightness: Math.max(0, Math.min(100, Math.round(req.value))) } }];
+    case 'blackout':
+      return [{ method: 'PUT', path: '/api/v1/screen/output/displaymode', body: { value: req.value ? 1 : 0, screenIdList: ids } }];
+    case 'freeze':
+      return [{ method: 'PUT', path: '/api/v1/screen/output/displaymode', body: { value: req.value ? 2 : 0, screenIdList: ids } }];
+    case 'preset':
+      return ids.map((id) => ({ method: 'POST' as const, path: '/api/v1/preset/current/update', body: { sequenceNumber: Math.round(req.value), screenID: id } }));
+    case 'input': {
+      if (!/^\d+$/.test(req.value)) throw new Error(`Unknown input "${req.value}".`);
+      return screens
+        .filter((s) => s.layer !== undefined)
+        .map((s) => ({ method: 'PUT' as const, path: '/api/v1/screen/layer/input', body: { layers: [{ id: String(s.layer), source: req.value }], screenID: s.id } }));
+    }
+    default:
+      throw new Error(`COEX processors do not take "${req.action}" from this dashboard.`);
+  }
 }
 
 /** Takes the data out of COEX's {code, data, message} envelope, or the body itself where a page has none. */
@@ -116,6 +167,7 @@ export function parseCoex(r: CoexResponses, portCapacity = DEFAULT_PORT_CAPACITY
     blackout: displayModes.length ? displayModes.some((m) => m === 1) : undefined,
     freeze: displayModes.length ? displayModes.some((m) => m === 2) : undefined,
     preset: parsePreset(r.presets),
+    presets: parsePresets(r.presets),
     failover: parseBackup(obj(r.backup), mon),
     loops: [],
     tiles,
@@ -182,6 +234,7 @@ function parseInputs(raw: unknown, screens: Tree[]): InputStatus[] {
     const rate = num(s.actualRefreshRate);
     return {
       label: str(s.name) || `Input ${id + 1}`,
+      key: String(id),
       type: 'input',
       number: id,
       active: used.has(id),
@@ -191,6 +244,17 @@ function parseInputs(raw: unknown, screens: Tree[]): InputStatus[] {
       rate: signal && rate && rate > 0 ? (rate > 1000 ? rate / 1000 : rate) : undefined,
     };
   });
+}
+
+function parsePresets(raw: unknown): PolledData['presets'] {
+  const seen = new Map<number, string>();
+  for (const screen of list(obj(raw).screenPresetList)) {
+    for (const p of list(obj(screen).presetList).map(obj)) {
+      const n = num(p.sequenceNumber);
+      if (n !== undefined && !seen.has(n)) seen.set(n, str(p.name) ?? `Preset ${n}`);
+    }
+  }
+  return seen.size ? [...seen].map(([number, name]) => ({ number, name })).sort((a, b) => a.number - b.number) : undefined;
 }
 
 function parsePreset(raw: unknown): PolledData['preset'] {

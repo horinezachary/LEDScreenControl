@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@ledmon/shared": "0.1.0",
+    "nodemailer": "^7.0.13",
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.2",
     "@types/ws": "^8.5.12"
   }
 }

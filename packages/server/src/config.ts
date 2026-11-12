@@ -2,7 +2,7 @@
 // or from the settings page.
 import fs from 'node:fs';
 import path from 'node:path';
-import type { BoxLayout, GroupLayout, ProcessorConfig, ProcessorKind, WallLayout } from '@ledmon/shared';
+import type { BoxLayout, EmailSettings, GroupLayout, ProcessorConfig, ProcessorKind, WallLayout } from '@ledmon/shared';
 
 export interface Thresholds {
   /** Any processor temperature at or above this is a warning, in °C. */
@@ -15,6 +15,8 @@ export interface Thresholds {
   tilesOfflineCritPercent: number;
   /** Missed polls before a processor counts as unreachable (critical). One missed poll is a warning. */
   unreachableAfterPolls: number;
+  /** Port load that raises a warning, in percent (COEX). Over 100% is critical. */
+  portLoadWarnPercent: number;
 }
 
 export interface Config {
@@ -29,7 +31,21 @@ export interface Config {
   walls: WallLayout[];
   /** UDP port for processors' syslog messages (point Tessera's syslog here). 0 turns it off. */
   syslogPort: number;
+  /** Lets the dashboard send control commands (brightness, preset, blackout...). On by default, as designed. */
+  controls: boolean;
+  email: EmailSettings;
 }
+
+export const DEFAULT_EMAIL: EmailSettings = {
+  enabled: false,
+  host: '',
+  port: 587,
+  secure: false,
+  from: '',
+  to: [],
+  minSeverity: 'critical',
+  repeatMinutes: 10,
+};
 
 export const DEFAULT_THRESHOLDS: Thresholds = {
   tempWarnC: 70,
@@ -37,6 +53,7 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   fanMinRpm: 500,
   tilesOfflineCritPercent: 5,
   unreachableAfterPolls: 3,
+  portLoadWarnPercent: 90,
 };
 
 export const DEFAULT_CONFIG: Config = {
@@ -47,6 +64,8 @@ export const DEFAULT_CONFIG: Config = {
   thresholds: DEFAULT_THRESHOLDS,
   walls: [],
   syslogPort: 5514,
+  controls: true,
+  email: DEFAULT_EMAIL,
 };
 
 const KINDS: ProcessorKind[] = ['brompton', 'coex', 'vxpro'];
@@ -70,7 +89,10 @@ export function parseConfig(raw: unknown): Config {
     },
     processors: [],
     walls: [],
+    controls: obj.controls === undefined ? true : obj.controls === true,
+    email: parseEmail(obj.email),
   };
+  if (obj.controls !== undefined && typeof obj.controls !== 'boolean') throw new ConfigError('"controls" must be true or false.');
   if (config.pollIntervalMs < 1000) throw new ConfigError('pollIntervalMs must be at least 1000.');
 
   const list = obj.processors ?? [];
@@ -98,6 +120,42 @@ export function parseConfig(raw: unknown): Config {
   });
   config.walls = parseWalls(obj.walls, ids);
   return config;
+}
+
+/** Writes the settings file, keeping the previous one as config.json.bak. Writes to a temporary file first, so a crash cannot leave half a file. */
+export function saveConfig(dataDir: string, config: Config): void {
+  const file = configPath(dataDir);
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });
+  if (fs.existsSync(file)) fs.copyFileSync(file, `${file}.bak`);
+  fs.renameSync(tmp, file);
+}
+
+function parseEmail(raw: unknown): EmailSettings {
+  if (raw === undefined) return { ...DEFAULT_EMAIL };
+  if (typeof raw !== 'object' || raw === null) throw new ConfigError('"email" must be an object.');
+  const o = raw as Record<string, unknown>;
+  const text = (k: string) => (typeof o[k] === 'string' ? (o[k] as string).trim() : undefined);
+  const to = Array.isArray(o.to) ? o.to : typeof o.to === 'string' ? o.to.split(/[,;\s]+/) : [];
+  const email: EmailSettings = {
+    enabled: o.enabled === true,
+    host: text('host') ?? '',
+    port: typeof o.port === 'number' ? o.port : o.secure === true ? 465 : 587,
+    secure: o.secure === true,
+    user: text('user') || undefined,
+    pass: typeof o.pass === 'string' && o.pass ? o.pass : undefined,
+    from: text('from') ?? '',
+    to: to.filter((t): t is string => typeof t === 'string' && t.trim() !== '').map((t) => t.trim()),
+    minSeverity: o.minSeverity === 'warning' ? 'warning' : 'critical',
+    repeatMinutes: typeof o.repeatMinutes === 'number' && o.repeatMinutes >= 0 ? o.repeatMinutes : 10,
+  };
+  if (email.enabled) {
+    if (!email.host) throw new ConfigError('Email alerts need an SMTP server ("email.host").');
+    if (!email.to.length) throw new ConfigError('Email alerts need at least one recipient ("email.to").');
+    if (!email.to.every((t) => /^[^@\s]+@[^@\s]+$/.test(t))) throw new ConfigError('Each email recipient must be an address like name@example.com.');
+    if (!email.from) email.from = email.user && email.user.includes('@') ? email.user : `led-monitor@${email.host}`;
+  }
+  return email;
 }
 
 function parseWalls(raw: unknown, processorIds: Set<string>): WallLayout[] {
