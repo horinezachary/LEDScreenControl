@@ -6,7 +6,9 @@ import { worstSeverity } from '@ledmon/shared';
 import type { Config } from './config.js';
 import type { Driver } from './drivers/types.js';
 import { bromptonDriver } from './drivers/brompton.js';
+import { vxproDriver } from './drivers/vxpro.js';
 import { coexDriver } from './drivers/coex.js';
+import { deviceDriver } from './drivers/device.js';
 import { EventLog } from './events.js';
 import { History } from './history.js';
 import type { AlertChange } from './alerter.js';
@@ -14,13 +16,15 @@ import { evaluate, loopAlerts } from './rules.js';
 import { Topology } from './topology.js';
 import { APP_VERSION } from './version.js';
 
-const PHASE_NOTE: Record<string, string> = {
-  vxpro: 'NovaStar VX Pro support is not built yet (planned for phase 5).',
-};
+const PHASE_NOTE: Record<string, string> = {};
 
-export function driverFor(p: ProcessorConfig): Driver | undefined {
+
+/** dataDir keeps what a driver must remember across restarts (COEX error count resets). */
+export function driverFor(p: ProcessorConfig, dataDir?: string): Driver | undefined {
   if (p.kind === 'brompton') return bromptonDriver(p);
-  if (p.kind === 'coex') return coexDriver(p);
+  if (p.kind === 'coex') return coexDriver(p, { dataDir });
+  if (p.kind === 'vxpro') return vxproDriver(p, { dataDir });
+  if (p.kind === 'device') return deviceDriver(p);
   return undefined;
 }
 
@@ -28,7 +32,7 @@ interface Entry {
   config: ProcessorConfig;
   driver?: Driver;
   view: ProcessorView;
-  loopsSeen: Map<number, string>;
+  loopsSeen: Map<string, string>;
   timer?: NodeJS.Timeout;
   inFlight?: AbortController;
   /** Added in code (the demo simulators) rather than from the settings, so a settings change leaves it alone. */
@@ -57,7 +61,7 @@ export class Monitor extends EventEmitter {
   constructor(
     private config: Config,
     dataDir?: string,
-    private driverFactory: (p: ProcessorConfig) => Driver | undefined = driverFor,
+    private driverFactory: (p: ProcessorConfig) => Driver | undefined = (p) => driverFor(p, dataDir),
   ) {
     super();
     this.events = new EventLog(dataDir);
@@ -121,7 +125,7 @@ export class Monitor extends EventEmitter {
       loops: [],
       severity: 'unknown',
       alerts: [],
-      lastError: driver ? undefined : PHASE_NOTE[p.kind],
+      lastError: driver ? undefined : (PHASE_NOTE[p.kind] ?? `No driver for ${p.kind} processors.`),
       controls: this.config.controls ? driver?.capabilities : undefined,
     };
     const entry: Entry = { config: p, driver, view, loopsSeen: new Map(), extra };
@@ -317,7 +321,7 @@ function stripView(v: ProcessorView): ProcessorSnapshot {
 function describe(req: ControlRequest, p: ProcessorView): string {
   switch (req.action) {
     case 'brightness':
-      return `brightness set to ${req.value}${p.brightnessUnit === '%' ? '%' : ' nits'}`;
+      return `brightness set to ${req.value}${(p.controls?.brightness?.unit ?? p.brightnessUnit) === '%' ? '%' : ' nits'}`;
     case 'blackout':
       return req.value ? 'blackout on' : 'blackout off';
     case 'freeze':
@@ -332,6 +336,8 @@ function describe(req: ControlRequest, p: ProcessorView): string {
       return 'failover requested';
     case 'reboot':
       return 'reboot requested';
+    case 'resetErrors':
+      return 'receiving card error counts reset on the dashboard';
   }
 }
 
@@ -341,10 +347,17 @@ function lowerFirst(s: string): string {
 
 function errorText(err: unknown): string {
   if (err instanceof Error) {
-    const cause = (err as Error & { cause?: { code?: string; message?: string } }).cause;
-    if (cause?.code === 'ECONNREFUSED') return 'connection refused (is IP control enabled?)';
-    if (cause?.code === 'EHOSTUNREACH' || cause?.code === 'ENETUNREACH') return 'host unreachable';
-    if (cause?.code) return `${cause.code}`;
+    // fetch puts the socket error under cause; a raw socket (VX Pro) puts it on the error itself.
+    const code = (err as Error & { cause?: { code?: string } }).cause?.code ?? (err as NodeJS.ErrnoException).code;
+    if (code === 'ECONNREFUSED') return 'connection refused (is IP control enabled?)';
+    if (code === 'EHOSTUNREACH' || code === 'ENETUNREACH') {
+      // macOS answers "host unreachable" for every address on the network when the app has not been allowed to use
+      // the local network, even though the processor is up.
+      return process.platform === 'darwin'
+        ? 'host unreachable (if it answers ping, allow LED Monitor in System Settings → Privacy & Security → Local Network, then restart it)'
+        : 'host unreachable';
+    }
+    if (code) return code;
     return err.message;
   }
   return String(err);

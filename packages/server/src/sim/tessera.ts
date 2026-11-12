@@ -170,9 +170,10 @@ export class TesseraSimulator {
         input: {
           active: { source: { 'port-type': this.input.type, 'port-number': this.input.number } },
           ports: {
-            sdi: { '1': signal ? sdi(3840, 2160, 59.94) : none, '2': sdi(1920, 1080, 59.94) },
-            hdmi: { '1': none },
-            dvi: { '1': none },
+            // Listed from "0" while port-number counts from 1, as a real SX40 on 3.5.2 does.
+            sdi: { '0': signal ? sdi(3840, 2160, 59.94) : none, '1': sdi(1920, 1080, 59.94) },
+            hdmi: { '0': none },
+            dvi: { '0': none },
           },
         },
         output: {
@@ -209,17 +210,21 @@ export class TesseraSimulator {
   }
 }
 
-/** Loop states: chains between XD A and B, and between C and D, one per port, as on the demo wall. */
+/**
+ * Loop states as a real SX40 on 3.5.2 reports them: one entry per pair of XD boxes, numbered from 1, listing every
+ * chain on it, e.g. "loop-found: A1->B1, loop-found: A2->B2". A lost loop reads "no-loop-found: A4->No connection".
+ */
 function demoLoopStates(broken: boolean): Record<string, { state: string }> {
   const out: Record<string, { state: string }> = {};
-  let i = 0;
-  for (const [a, b] of [['A', 'B'], ['C', 'D']]) {
+  [['A', 'B'], ['C', 'D']].forEach(([a, b], i) => {
+    const chains: string[] = [];
     for (let port = 1; port <= 10; port++) {
       // The loop-broken scenario breaks the chain on A4 to B4.
       const lost = broken && a === 'A' && port === 4;
-      out[String(i++)] = { state: lost ? 'no-loop-found: No connection' : `loop-found: ${a}${port}->${b}${port}` };
+      chains.push(lost ? `no-loop-found: ${a}${port}->No connection` : `loop-found: ${a}${port}->${b}${port}`);
     }
-  }
+    out[String(i + 1)] = { state: chains.join(', ') };
+  });
   return out;
 }
 

@@ -1,4 +1,4 @@
-// LED Monitor's menu bar app. It runs the monitoring server inside itself, so there is nothing else to install, and
+// LED Monitor's menu bar app (the notification area on Windows). It runs the monitoring server inside itself, so there is nothing else to install, and
 // gives a menu to open the dashboard, copy the link for others, open the settings folder and turn demo mode on or off.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -40,7 +40,9 @@ async function start(): Promise<void> {
   } catch (err) {
     running = undefined;
     if (err instanceof ConfigError) problem = `Settings problem: ${err.message}`;
-    else if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE') problem = 'The dashboard port is already in use. Change "port" in config.json.';
+    else if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE') {
+      problem = `Port ${readPort()} is already in use, perhaps by another copy of LED Monitor. Quit that, or change "port" in config.json (Open Settings Folder), then Restart Server.`;
+    }
     else problem = `Could not start: ${(err as Error).message}`;
   }
   buildMenu();
@@ -54,6 +56,16 @@ async function restart(): Promise<void> {
   await running?.close();
   running = undefined;
   await start();
+}
+
+/** The dashboard port from config.json, for messages. */
+function readPort(): number {
+  try {
+    const c = JSON.parse(fs.readFileSync(configPath(dataDir()), 'utf8')) as { port?: unknown };
+    return typeof c.port === 'number' ? c.port : 6060;
+  } catch {
+    return 6060;
+  }
 }
 
 function dashboardUrl(): string {
@@ -123,14 +135,20 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     app.dock?.hide();
-    const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'trayTemplate.png'));
-    icon.setTemplateImage(true);
+    // The Mac menu bar takes a black template image it recolours; the Windows notification area shows the app icon.
+    const icon =
+      process.platform === 'darwin'
+        ? nativeImage.createFromPath(path.join(__dirname, 'assets', 'trayTemplate.png'))
+        : nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png')).resize({ width: 32, height: 32 });
+    if (process.platform === 'darwin') icon.setTemplateImage(true);
     tray = new Tray(icon);
+    // Windows opens a tray icon's menu on right click only; open it on a left click too.
+    if (process.platform === 'win32') tray.on('click', () => tray?.popUpContextMenu());
     buildMenu();
     await start();
     // Keep the status line in the menu current.
     refresh = setInterval(buildMenu, 5000);
-    if (problem && !fs.existsSync(configPath(dataDir()))) {
+    if (problem && (!fs.existsSync(configPath(dataDir())) || problem.includes('already in use'))) {
       dialog.showErrorBox('LED Monitor', problem);
     }
   });

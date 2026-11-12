@@ -23,7 +23,7 @@ export function Controls({ p }: { p: ProcessorView }) {
   }, [p.brightness]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!caps) {
-    return <p className="sub">This processor has no controls on the dashboard{p.kind === 'vxpro' ? '' : ', or controls are turned off in the settings'}.</p>;
+    return <p className="sub">Controls are turned off in the settings, or this processor has none on the dashboard.</p>;
   }
 
   const send = async (req: ControlRequest) => {
@@ -32,7 +32,7 @@ export function Controls({ p }: { p: ProcessorView }) {
     setMessage(undefined);
     try {
       await api('POST', `/api/processors/${encodeURIComponent(p.id)}/control`, req);
-      setMessage({ ok: true, text: 'Done. The processor confirmed it.' });
+      setMessage({ ok: true, text: req.action === 'resetErrors' ? 'Done. Only receiving card errors counted from now on are flagged.' : 'Done. The processor confirmed it.' });
     } catch (err) {
       setMessage({ ok: false, text: (err as Error).message });
     } finally {
@@ -174,6 +174,18 @@ export function Controls({ p }: { p: ProcessorView }) {
               Reboot
             </button>
           )}
+        </div>
+      )}
+
+      {caps.resetErrors && (
+        <div className="control-row">
+          <span className="label">Card errors</span>
+          <button type="button" className="btn" disabled={disabled} onClick={() => void send({ action: 'resetErrors' })}>
+            Reset error counts
+          </button>
+          <span className="sub">
+            {p.tiles?.errors ? `${p.tiles.errors} cabinet${p.tiles.errors === 1 ? '' : 's'} flagged. ` : ''}Only the dashboard forgets; the processor keeps its own counts.
+          </span>
         </div>
       )}
 

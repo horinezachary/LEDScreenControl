@@ -41,7 +41,7 @@ case "$mode" in
       pm2 start ecosystem.config.cjs
     fi
     pm2 save >/dev/null
-    port="$(node -p 'try{require("./data/config.json").port}catch{8080}')"
+    port="$(node -p 'try{require("./data/config.json").port}catch{6060}')"
     if curl -fs --retry 10 --retry-delay 1 --retry-connrefused "http://127.0.0.1:${port}/healthz" >/dev/null; then
       say "LED Monitor is answering on port ${port}. Settings: $(pwd)/data/config.json"
     else

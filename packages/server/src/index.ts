@@ -4,9 +4,11 @@ import type http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { loadConfig, type Config } from './config.js';
 import { Monitor } from './monitor.js';
-import { createHttpServer } from './http.js';
+import { closeHttpServer, createHttpServer } from './http.js';
 import { demoWall, startDemoPair, type TesseraSimulator } from './sim/tessera.js';
 import { startDemoCoex, type CoexSimulator } from './sim/coex.js';
+import { startDemoVx, type VxSimulator } from './sim/vxpro.js';
+import { vxproDriver } from './drivers/vxpro.js';
 import { levelOf, startSyslog, type SyslogServer } from './syslog.js';
 import { Auth } from './auth.js';
 import { Alerter, type AlertChange } from './alerter.js';
@@ -28,11 +30,11 @@ export interface StartOptions {
 
 export interface RunningServer {
   port: number;
-  /** Addresses other people on the network can open, e.g. http://10.10.20.5:8080. */
+  /** Addresses other people on the network can open, e.g. http://10.10.20.5:6060. */
   urls: string[];
   config: Config;
   monitor: Monitor;
-  simulators: (TesseraSimulator | CoexSimulator)[];
+  simulators: (TesseraSimulator | CoexSimulator | VxSimulator)[];
   syslog?: SyslogServer;
   close(): Promise<void>;
 }
@@ -46,7 +48,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
   const port = opts.port ?? config.port;
   const monitor = new Monitor(config, opts.dataDir);
 
-  const simulators: (TesseraSimulator | CoexSimulator)[] = [];
+  const simulators: (TesseraSimulator | CoexSimulator | VxSimulator)[] = [];
   if (opts.simulate) {
     const { sims, ports } = await startDemoPair();
     simulators.push(...sims);
@@ -59,6 +61,11 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     simulators.push(coex.sim);
     monitor.add({ id: `sim-${coex.sim.options.serial}`, kind: 'coex', host: '127.0.0.1', port: coex.port });
     log(`Simulating a COEX MX40 Pro on port ${coex.port}. Faults: GET http://127.0.0.1:${coex.port}/sim/scenario?set=port-overload`);
+    const vx = await startDemoVx();
+    simulators.push(vx.sim);
+    const vxConfig = { id: 'sim-vx', name: 'Side Screens (simulated VX2000 Pro)', kind: 'vxpro' as const, host: '127.0.0.1', port: vx.port };
+    monitor.add(vxConfig, vxproDriver(vxConfig, { coexPort: 0 }));
+    log(`Simulating a VX2000 Pro on TCP port ${vx.port}.`);
   }
 
   const auth = new Auth(opts.dataDir);
@@ -99,8 +106,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
       await alerter.flush();
       alerter.stop();
       await syslog?.close();
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-      server.closeAllConnections?.();
+      await closeHttpServer(server);
       await Promise.all(simulators.map((s) => s.close()));
     },
   };

@@ -33,7 +33,7 @@ export function App() {
         ))}
       </nav>
       {page === 'settings' ? (
-        <SettingsPage auth={auth} setAuth={setAuth} />
+        <SettingsPage auth={auth} setAuth={setAuth} state={state} />
       ) : !state ? (
         <p className="empty">Connecting to the monitor…</p>
       ) : page === 'processor' && route.id ? (

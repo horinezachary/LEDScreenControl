@@ -209,6 +209,7 @@ function controlRequest(body: unknown): ControlRequest {
       return { action: 'input', value: b.value };
     case 'failover':
     case 'reboot':
+    case 'resetErrors':
       return { action: b.action };
     default:
       throw new HttpError(400, 'Unknown control.');

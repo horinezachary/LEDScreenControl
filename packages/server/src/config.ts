@@ -57,7 +57,7 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
 };
 
 export const DEFAULT_CONFIG: Config = {
-  port: 8080,
+  port: 6060,
   pollIntervalMs: 5000,
   requestTimeoutMs: 3000,
   processors: [],
@@ -68,7 +68,7 @@ export const DEFAULT_CONFIG: Config = {
   email: DEFAULT_EMAIL,
 };
 
-const KINDS: ProcessorKind[] = ['brompton', 'coex', 'vxpro'];
+const KINDS: ProcessorKind[] = ['brompton', 'coex', 'vxpro', 'device'];
 
 export class ConfigError extends Error {}
 

@@ -1,0 +1,2725 @@
+{
+ "_source": "NovaStar CX40 Pro (hw V1.5.1, config V1.4.0.1, FPGA 2026_0424_192536) at a rehearsal, read-only GETs on 2026-11-12. Trimmed: hw keeps the fields the driver reads plus capability.maxCurtainCapacity; monitor/info and screen keep every cabinet; sources keep the fields the driver reads (HDMI2.0 2 carries the show at 3840 × 2160); serial-like ids and the device password are left out.",
+ "hw": {
+  "name": "CX40 Pro",
+  "customName": "CX40 Pro_000007",
+  "modelID": 4626,
+  "sn": "24C31A000000007",
+  "type": "G3.5",
+  "netPortBandWidth": 1,
+  "hwVersion": "V1.5.1",
+  "swVersion": "",
+  "fpgaVersion": "2026_0424_192536",
+  "configVersion": "V1.4.0.1",
+  "uptime": 246420,
+  "capability": {
+   "maxCapacity": 31457280,
+   "maxCurtainCapacity": 9000000,
+   "frameRateTable": [
+    23.98,
+    24,
+    25,
+    29.97,
+    30,
+    47.95,
+    48,
+    50,
+    59.94,
+    60,
+    71.93,
+    72,
+    75,
+    100,
+    119.88,
+    120,
+    143.86,
+    144,
+    240
+   ]
+  }
+ },
+ "monitor": {
+  "name": "CX40 Pro_000007",
+  "runtime": 246420,
+  "mainBoardTemperature": {
+   "value": 42,
+   "status": 0,
+   "name": "主板温度",
+   "nameEn": "Mainboard Temperature"
+  },
+  "mainBoardVoltage": {
+   "value": 11.46,
+   "status": 0
+  },
+  "backupStatus": {
+   "status": 0,
+   "errCode": 108,
+   "minNormalValue": 0,
+   "maxNormalValue": 0
+  },
+  "fanInfos": [
+   {
+    "fanSpeed": 2145,
+    "fanType": 3,
+    "fanNameEn": "FPGA_A Fan",
+    "status": 0
+   },
+   {
+    "fanSpeed": 2100,
+    "fanType": 4,
+    "fanNameEn": "FPGA_B Fan",
+    "status": 0
+   },
+   {
+    "fanSpeed": 1755,
+    "fanType": 16,
+    "fanNameEn": "Chassis Fan 1",
+    "status": 0
+   },
+   {
+    "fanSpeed": 1665,
+    "fanType": 17,
+    "fanNameEn": "Chassis Fan 2",
+    "status": 0
+   }
+  ],
+  "voltageInfos": null,
+  "temperatureInfos": null,
+  "powerMonitorInfos": [
+   {
+    "powerID": 0,
+    "status": 0
+   }
+  ],
+  "controllerPortMonitorInfos": [
+   {
+    "controllerPortID": 0,
+    "status": 2
+   },
+   {
+    "controllerPortID": 1,
+    "status": 0
+   }
+  ],
+  "cardMonitorInfo": [
+   {
+    "cardID": 0,
+    "cardType": 0,
+    "status": 0,
+    "cardTemperatureInfos": null
+   },
+   {
+    "cardID": 1,
+    "cardType": 1,
+    "status": 0,
+    "cardTemperatureInfos": [
+     {
+      "temperature": 36,
+      "temperatureType": 20,
+      "temperatureNameEn": "Temperature",
+      "status": 0
+     }
+    ]
+   }
+  ],
+  "outputStatus": [
+   {
+    "outputCardID": 1,
+    "outputID": 256,
+    "type": 0,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 257,
+    "type": 0,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 258,
+    "type": 0,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 259,
+    "type": 0,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 260,
+    "type": 0,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 261,
+    "type": 0,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 262,
+    "type": 5,
+    "status": 0,
+    "linkStatus": true
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 263,
+    "type": 5,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 264,
+    "type": 5,
+    "status": 0,
+    "linkStatus": true
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 265,
+    "type": 5,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 266,
+    "type": 5,
+    "status": 2,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 267,
+    "type": 5,
+    "status": 0,
+    "linkStatus": false
+   },
+   {
+    "outputCardID": 1,
+    "outputID": 268,
+    "type": 1,
+    "status": 2,
+    "linkStatus": true
+   },
+   {
+    "outputCardID": 0,
+    "outputID": 0,
+    "type": 3,
+    "status": 0,
+    "linkStatus": false
+   }
+  ],
+  "cabinets": [
+   {
+    "cabinetID": 7402938792148992,
+    "rvCardID": 7402938792148992,
+    "outPutID": 256,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 0,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792148992,
+      "rvCardID": 7402938792148992,
+      "netPortIndex": 256,
+      "cabinetIndex": 0,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 41,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 1,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792148993,
+    "rvCardID": 7402938792148993,
+    "outPutID": 256,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 1,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792148993,
+      "rvCardID": 7402938792148993,
+      "netPortIndex": 256,
+      "cabinetIndex": 1,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 41,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 3,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792148994,
+    "rvCardID": 7402938792148994,
+    "outPutID": 256,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 2,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792148994,
+      "rvCardID": 7402938792148994,
+      "netPortIndex": 256,
+      "cabinetIndex": 2,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 41,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 4,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792148995,
+    "rvCardID": 7402938792148995,
+    "outPutID": 256,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 3,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792148995,
+      "rvCardID": 7402938792148995,
+      "netPortIndex": 256,
+      "cabinetIndex": 3,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 39,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 3,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792280064,
+    "rvCardID": 7402938792280064,
+    "outPutID": 258,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 0,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792280064,
+      "rvCardID": 7402938792280064,
+      "netPortIndex": 258,
+      "cabinetIndex": 0,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 43,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 4,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 2,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792280065,
+    "rvCardID": 7402938792280065,
+    "outPutID": 258,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 1,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792280065,
+      "rvCardID": 7402938792280065,
+      "netPortIndex": 258,
+      "cabinetIndex": 1,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 44,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 4,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 2,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792280066,
+    "rvCardID": 7402938792280066,
+    "outPutID": 258,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 2,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792280066,
+      "rvCardID": 7402938792280066,
+      "netPortIndex": 258,
+      "cabinetIndex": 2,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 45,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 2,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 2,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792280067,
+    "rvCardID": 7402938792280067,
+    "outPutID": 258,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 3,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792280067,
+      "rvCardID": 7402938792280067,
+      "netPortIndex": 258,
+      "cabinetIndex": 3,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 44,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 3,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 2,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792280068,
+    "rvCardID": 7402938792280068,
+    "outPutID": 258,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 4,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792280068,
+      "rvCardID": 7402938792280068,
+      "netPortIndex": 258,
+      "cabinetIndex": 4,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 43,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 1,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 2,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792280069,
+    "rvCardID": 7402938792280069,
+    "outPutID": 258,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 5,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792280069,
+      "rvCardID": 7402938792280069,
+      "netPortIndex": 258,
+      "cabinetIndex": 5,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 42,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 0,
+        "type": 0,
+        "status": 0
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 2,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792280070,
+    "rvCardID": 7402938792280070,
+    "outPutID": 258,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 6,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792280070,
+      "rvCardID": 7402938792280070,
+      "netPortIndex": 258,
+      "cabinetIndex": 6,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 44,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 0,
+        "type": 0,
+        "status": 0
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 2,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792280071,
+    "rvCardID": 7402938792280071,
+    "outPutID": 258,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 7,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792280071,
+      "rvCardID": 7402938792280071,
+      "netPortIndex": 258,
+      "cabinetIndex": 7,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 43,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 0,
+        "type": 0,
+        "status": 0
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 2,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792411136,
+    "rvCardID": 7402938792411136,
+    "outPutID": 260,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 0,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792411136,
+      "rvCardID": 7402938792411136,
+      "netPortIndex": 260,
+      "cabinetIndex": 0,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 42,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 59,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792411137,
+    "rvCardID": 7402938792411137,
+    "outPutID": 260,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 1,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792411137,
+      "rvCardID": 7402938792411137,
+      "netPortIndex": 260,
+      "cabinetIndex": 1,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 43,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 50,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792411138,
+    "rvCardID": 7402938792411138,
+    "outPutID": 260,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 2,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792411138,
+      "rvCardID": 7402938792411138,
+      "netPortIndex": 260,
+      "cabinetIndex": 2,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 43,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 23,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792411139,
+    "rvCardID": 7402938792411139,
+    "outPutID": 260,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 3,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792411139,
+      "rvCardID": 7402938792411139,
+      "netPortIndex": 260,
+      "cabinetIndex": 3,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 44,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 8,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792411140,
+    "rvCardID": 7402938792411140,
+    "outPutID": 260,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 4,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792411140,
+      "rvCardID": 7402938792411140,
+      "netPortIndex": 260,
+      "cabinetIndex": 4,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 43,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 5,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792411141,
+    "rvCardID": 7402938792411141,
+    "outPutID": 260,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 5,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792411141,
+      "rvCardID": 7402938792411141,
+      "netPortIndex": 260,
+      "cabinetIndex": 5,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 43,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 3,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792411142,
+    "rvCardID": 7402938792411142,
+    "outPutID": 260,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 6,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 3.9,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792411142,
+      "rvCardID": 7402938792411142,
+      "netPortIndex": 260,
+      "cabinetIndex": 6,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 44,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 3.9,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 3,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   },
+   {
+    "cabinetID": 7402938792411143,
+    "rvCardID": 7402938792411143,
+    "outPutID": 260,
+    "outputCardID": 1,
+    "canvasID": 256,
+    "index": 7,
+    "cabinet": {
+     "cabinetID": 0,
+     "power": null,
+     "temperature": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "humidity": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "smoke": {
+      "value": 0,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     },
+     "voltage": {
+      "value": 4,
+      "status": 0,
+      "name": "",
+      "nameEn": ""
+     }
+    },
+    "rvCards": [
+     {
+      "cabinetID": 7402938792411143,
+      "rvCardID": 7402938792411143,
+      "netPortIndex": 260,
+      "cabinetIndex": 7,
+      "runtime": 0,
+      "totalRuntime": 0,
+      "temperature": {
+       "value": 43,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "voltage": {
+       "value": 4,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "humidity": {
+       "value": 0,
+       "status": 0,
+       "name": "",
+       "nameEn": ""
+      },
+      "errorBit": [
+       {
+        "value": 2,
+        "type": 0,
+        "status": 1
+       },
+       {
+        "value": 0,
+        "type": 1,
+        "status": 0
+       }
+      ],
+      "signalInterruptCount": 1,
+      "backupStatus": {
+       "mode": 0,
+       "status": 0
+      },
+      "nextCabinetLinkStatus": {
+       "linkStatus": true,
+       "status": 0
+      },
+      "phyTemperature": {
+       "phy1": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       },
+       "phy2": {
+        "value": 0,
+        "status": 0,
+        "name": "",
+        "nameEn": ""
+       }
+      },
+      "moduleInfos": null
+     }
+    ]
+   }
+  ]
+ },
+ "screen": {
+  "screens": [
+   {
+    "screenID": "{70233cc7-94fe-4e87-aa02-380b32822d19}",
+    "screenName": "Screen_000007",
+    "workingMode": 1,
+    "canvases": [
+     {
+      "canvasID": 256,
+      "outputCardId": 1,
+      "outputCardModeId": 4626,
+      "size": {
+       "width": 3840,
+       "height": 2160
+      },
+      "cabinets": [
+       {
+        "cabinetID": 7402938792148992,
+        "connectID": 0,
+        "outputID": 256,
+        "pageID": 0,
+        "position": {
+         "x": 0,
+         "y": 320
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792148993,
+        "connectID": 1,
+        "outputID": 256,
+        "pageID": 0,
+        "position": {
+         "x": 0,
+         "y": 0
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792148994,
+        "connectID": 2,
+        "outputID": 256,
+        "pageID": 0,
+        "position": {
+         "x": 320,
+         "y": 0
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792148995,
+        "connectID": 3,
+        "outputID": 256,
+        "pageID": 0,
+        "position": {
+         "x": 320,
+         "y": 320
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792280064,
+        "connectID": 0,
+        "outputID": 258,
+        "pageID": 0,
+        "position": {
+         "x": 960,
+         "y": 0
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792280065,
+        "connectID": 1,
+        "outputID": 258,
+        "pageID": 0,
+        "position": {
+         "x": 640,
+         "y": 0
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792280066,
+        "connectID": 2,
+        "outputID": 258,
+        "pageID": 0,
+        "position": {
+         "x": 640,
+         "y": 320
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792280067,
+        "connectID": 3,
+        "outputID": 258,
+        "pageID": 0,
+        "position": {
+         "x": 640,
+         "y": 640
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792280068,
+        "connectID": 4,
+        "outputID": 258,
+        "pageID": 0,
+        "position": {
+         "x": 640,
+         "y": 960
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792280069,
+        "connectID": 5,
+        "outputID": 258,
+        "pageID": 0,
+        "position": {
+         "x": 960,
+         "y": 960
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792280070,
+        "connectID": 6,
+        "outputID": 258,
+        "pageID": 0,
+        "position": {
+         "x": 960,
+         "y": 640
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792280071,
+        "connectID": 7,
+        "outputID": 258,
+        "pageID": 0,
+        "position": {
+         "x": 960,
+         "y": 320
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792411136,
+        "connectID": 0,
+        "outputID": 260,
+        "pageID": 0,
+        "position": {
+         "x": 0,
+         "y": 1280
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792411137,
+        "connectID": 1,
+        "outputID": 260,
+        "pageID": 0,
+        "position": {
+         "x": 320,
+         "y": 1280
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792411138,
+        "connectID": 2,
+        "outputID": 260,
+        "pageID": 0,
+        "position": {
+         "x": 640,
+         "y": 1280
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792411139,
+        "connectID": 3,
+        "outputID": 260,
+        "pageID": 0,
+        "position": {
+         "x": 960,
+         "y": 1280
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792411140,
+        "connectID": 4,
+        "outputID": 260,
+        "pageID": 0,
+        "position": {
+         "x": 960,
+         "y": 1600
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792411141,
+        "connectID": 5,
+        "outputID": 260,
+        "pageID": 0,
+        "position": {
+         "x": 640,
+         "y": 1600
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792411142,
+        "connectID": 6,
+        "outputID": 260,
+        "pageID": 0,
+        "position": {
+         "x": 320,
+         "y": 1600
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       },
+       {
+        "cabinetID": 7402938792411143,
+        "connectID": 7,
+        "outputID": 260,
+        "pageID": 0,
+        "position": {
+         "x": 0,
+         "y": 1600
+        },
+        "size": {
+         "width": 320,
+         "height": 320
+        },
+        "angle": 0,
+        "lockStatus": false
+       }
+      ],
+      "maxFrameRate": 65.1
+     }
+    ],
+    "layersInWorkingMode": [
+     {
+      "workingMode": 0,
+      "layerLayoutMode": 1,
+      "layers": [
+       {
+        "id": 1,
+        "source": 25857,
+        "layerInCanvasId": 256
+       }
+      ]
+     },
+     {
+      "workingMode": 1,
+      "layerLayoutMode": 0,
+      "layers": [
+       {
+        "id": 65537,
+        "source": 25857,
+        "zOrder": 1,
+        "layerInCanvasId": 0
+       },
+       {
+        "id": 65538,
+        "source": 1,
+        "zOrder": 0,
+        "layerInCanvasId": 256
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "output": [
+  {
+   "currentFrameRate": 60,
+   "outputBitDepth": {
+    "bitDepth": 255,
+    "currentBitDepth": 0
+   }
+  }
+ ],
+ "displayParams": {
+  "brightness": 1,
+  "colorTemperature": 6504,
+  "gamma": 2.4
+ },
+ "displayState": {
+  "mappingState": [
+   {
+    "canvasID": 256,
+    "enable": false
+   }
+  ],
+  "displayState": [
+   {
+    "canvasID": 256,
+    "displayMode": 0
+   }
+  ]
+ },
+ "presets": {
+  "screenPresets": []
+ },
+ "backup": {
+  "master": "",
+  "backup": "",
+  "masterName": "",
+  "backupName": ""
+ },
+ "sources": [
+  {
+   "id": 4,
+   "cardId": 0,
+   "type": 9,
+   "name": "12G-SDI 1",
+   "sourceStatus": 0,
+   "actualResolution": {
+    "height": 1080,
+    "width": 1920
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 5
+  },
+  {
+   "id": 1,
+   "cardId": 0,
+   "type": 9,
+   "name": "12G-SDI 2",
+   "sourceStatus": 0,
+   "actualResolution": {
+    "height": 1080,
+    "width": 1920
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 2
+  },
+  {
+   "id": 3,
+   "cardId": 0,
+   "type": 5,
+   "name": "DP1.2",
+   "sourceStatus": 0,
+   "actualResolution": {
+    "height": 2160,
+    "width": 3840
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 4
+  },
+  {
+   "id": 2,
+   "cardId": 0,
+   "type": 3,
+   "name": "HDMI2.0 1",
+   "sourceStatus": 0,
+   "actualResolution": {
+    "height": 2160,
+    "width": 3840
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 3
+  },
+  {
+   "id": 0,
+   "cardId": 0,
+   "type": 3,
+   "name": "HDMI2.0 2",
+   "sourceStatus": 1,
+   "actualResolution": {
+    "height": 2160,
+    "width": 3840
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 1
+  },
+  {
+   "id": 25856,
+   "cardId": 101,
+   "type": 224,
+   "name": "internal-source",
+   "sourceStatus": 1,
+   "actualResolution": {
+    "height": 2160,
+    "width": 3840
+   },
+   "actualRefreshRate": 60,
+   "usable": true,
+   "groupId": 25857
+  }
+ ]
+}

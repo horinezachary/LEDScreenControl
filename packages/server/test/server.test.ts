@@ -19,7 +19,7 @@ describe('config', () => {
   it('writes a starter file and reads it back', () => {
     const dir = tmp();
     const c = loadConfig(dir);
-    expect(c.port).toBe(8080);
+    expect(c.port).toBe(6060);
     expect(c.processors).toEqual([]);
     expect(fs.existsSync(path.join(dir, 'config.json'))).toBe(true);
   });
@@ -68,14 +68,30 @@ describe('monitor', () => {
     expect(v.lastError).toMatch(/refused/);
   });
 
-  it('shows VX Pro as not supported yet instead of failing', () => {
+  it('gives VX Pro processors a driver', () => {
     const config = parseConfig({ processors: [{ id: 'v', kind: 'vxpro', host: '10.0.0.2' }] });
     const state = new Monitor(config).state();
-    expect(state.processors[0]).toMatchObject({ severity: 'unknown', lastError: expect.stringMatching(/phase 5/) });
+    expect(state.processors[0]).toMatchObject({ severity: 'unknown', lastError: undefined });
   });
 });
 
 describe('server', () => {
+  it('reports a port in use instead of crashing, and closes with a dashboard tab open', async () => {
+    const first: RunningServer = await startServer({ dataDir: tmp(), port: 0, log: () => {} });
+    cleanups.push(() => first.close());
+    await expect(startServer({ dataDir: tmp(), port: first.port, log: () => {} })).rejects.toMatchObject({ code: 'EADDRINUSE' });
+    // An open tab keeps a WebSocket and a keep-alive connection; closing must not wait for them.
+    const ws = new WebSocket(`ws://127.0.0.1:${first.port}/ws`);
+    await new Promise((resolve, reject) => {
+      ws.on('message', resolve);
+      ws.on('error', reject);
+    });
+    await fetch(`http://127.0.0.1:${first.port}/api/state`);
+    const closed = await Promise.race([first.close().then(() => 'closed'), new Promise((r) => setTimeout(() => r('hung'), 3000))]);
+    expect(closed).toBe('closed');
+    cleanups.pop();
+  });
+
   it('picks a free port when asked for port 0', async () => {
     const running: RunningServer = await startServer({ dataDir: tmp(), port: 0, log: () => {} });
     cleanups.push(() => running.close());
@@ -102,7 +118,7 @@ describe('server', () => {
       });
       ws.on('error', reject);
     });
-    expect(state.processors.map((p) => p.name).sort()).toEqual(['IMAG Left (simulated)', 'Stage Backup (simulated)', 'Stage Main (simulated)']);
+    expect(state.processors.map((p) => p.name).sort()).toEqual(['IMAG Left (simulated)', 'Side Screens (simulated VX2000 Pro)', 'Stage Backup (simulated)', 'Stage Main (simulated)']);
     expect(state.walls.map((w) => w.name)).toEqual(['Main stage wall (simulated)', 'IMAG Left screen']);
     expect(state.severity).toBe('ok');
   }, 15000);

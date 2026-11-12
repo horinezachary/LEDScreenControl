@@ -53,6 +53,8 @@ function ProcessorCard({ p, now, go }: { p: ProcessorView; now: number; go: (pat
         </p>
       )}
 
+      {p.reachable && p.note && <p className="note">{p.note}</p>}
+
       {p.alerts.length > 0 && (
         <ul className="alerts">
           {p.alerts.map((a) => (
@@ -153,8 +155,8 @@ function ProcessorCard({ p, now, go }: { p: ProcessorView; now: number; go: (pat
                 <caption>Cable loops</caption>
                 <tbody>
                   {p.loops.map((l) => (
-                    <tr key={l.index}>
-                      <th scope="row">Loop {l.index + 1}</th>
+                    <tr key={l.key}>
+                      <th scope="row">{l.port ? `Chain ${l.port}` : `Loop ${l.index}`}</th>
                       <td className="mono">{l.state}</td>
                     </tr>
                   ))}
@@ -189,6 +191,6 @@ function failoverText(p: ProcessorView): React.ReactNode {
 }
 
 export function kindName(kind: ProcessorView['kind']): string {
-  return { brompton: 'Brompton', coex: 'NovaStar COEX', vxpro: 'NovaStar VX Pro' }[kind];
+  return { brompton: 'Brompton', coex: 'NovaStar COEX', vxpro: 'NovaStar VX Pro', device: 'Network device' }[kind];
 }
 
