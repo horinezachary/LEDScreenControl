@@ -96,6 +96,23 @@ export interface ProcessorSnapshot {
   failover?: FailoverStatus;
   loops: CableLoop[];
   tiles?: TileSummary;
+  /** Distribution boxes and other devices the processor lists (Brompton XD boxes), for matching the layout. */
+  devices?: DeviceInfo[];
+  /** Set by processors that report their own cabinet map (COEX): the wall, ready to draw. */
+  topology?: ProcessorTopology;
+}
+
+export interface DeviceInfo {
+  id: string;
+  type?: string;
+  firmware?: string;
+  online?: boolean;
+}
+
+export interface ProcessorTopology {
+  name?: string;
+  groups: GroupView[];
+  notes?: string[];
 }
 
 export interface Alert {
@@ -119,6 +136,8 @@ export interface EventEntry {
   processorId?: string;
   level: 'info' | 'ok' | 'warning' | 'critical';
   message: string;
+  /** Where it came from: the monitor's own rules (default), a processor's syslog, or a control action. */
+  source?: 'monitor' | 'syslog' | 'control';
 }
 
 export interface DashboardState {
@@ -126,7 +145,119 @@ export interface DashboardState {
   startedAt: number;
   severity: Severity;
   processors: ProcessorView[];
+  walls: WallView[];
   events: EventEntry[];
+}
+
+// ---- Topology ----
+// A wall is drawn the same way whatever feeds it: the processors at the top and bottom, and between them groups of
+// outputs. A group has a left box and an optional right box (a pair of Brompton XD boxes, or a COEX processor's own
+// outputs), and each row of a group is one tile chain, fed from a port on the left box and, when the chain is cabled
+// as a loop, from the same port number on the right box.
+
+/** How a wall is described in config.json (Brompton). COEX walls are built from the processor's own cabinet map. */
+export interface WallLayout {
+  id: string;
+  name: string;
+  /** Processor id of the processor that normally drives the wall. */
+  primary: string;
+  /** Processor id of its redundant partner, if there is one. */
+  backup?: string;
+  groups: GroupLayout[];
+}
+
+export interface BoxLayout {
+  name: string;
+  /** Processor output that feeds the box, e.g. "A" for an SX40's trunk A. Used to match cable loop reports. */
+  trunk?: string;
+  /** Tile ports on the box. Brompton XD: 10. */
+  ports?: number;
+  serial?: string;
+}
+
+export interface GroupLayout {
+  left: BoxLayout;
+  right?: BoxLayout;
+  /** Tiles on the chain at each port, port 1 first. 0 means nothing is plugged into that port. */
+  chains: number[];
+}
+
+export type LinkState = 'ok' | 'standby' | 'lost' | 'unknown';
+
+export interface TileView {
+  id: string;
+  severity: Severity;
+  label?: string;
+  /** Free text for the side panel, e.g. "41.2 °C · 5.0 V". */
+  detail?: string;
+}
+
+export interface PortView {
+  /** e.g. "A1". */
+  label: string;
+  state: LinkState;
+  /** Only where the processor reports enough to work it out (COEX). */
+  load?: { pixels: number; capacity: number; percent: number };
+}
+
+export interface ChainView {
+  id: string;
+  label: string;
+  /** Tiles drawn on the chain. A Brompton chain has the count from the layout and no per-tile status. */
+  tiles: TileView[];
+  tileCount: number;
+  from: PortView;
+  /** The far end, when the chain loops back to a second box. */
+  to?: PortView;
+  /** Whether the processor confirms the loop: ok, broken (redundant end lost), or not reported. */
+  loop: 'ok' | 'broken' | 'unknown' | 'none';
+  severity: Severity;
+  notes: string[];
+}
+
+export interface BoxView {
+  name: string;
+  trunk?: string;
+  online?: boolean;
+  firmware?: string;
+}
+
+export interface GroupView {
+  left: BoxView;
+  right?: BoxView;
+  chains: ChainView[];
+}
+
+export interface WallProcessorView {
+  id: string;
+  name: string;
+  role: 'primary' | 'backup' | 'single';
+  /** True for the processor currently driving the wall. */
+  driving: boolean;
+  severity: Severity;
+  reachable: boolean;
+  summary: string;
+}
+
+export interface TrunkView {
+  label: string;
+  /** Column of the box it feeds: group index and side. */
+  group: number;
+  side: 'left' | 'right';
+  fromPrimary: LinkState;
+  fromBackup?: LinkState;
+}
+
+export interface WallView {
+  id: string;
+  name: string;
+  source: 'layout' | 'processor';
+  severity: Severity;
+  primary: WallProcessorView;
+  backup?: WallProcessorView;
+  trunks: TrunkView[];
+  groups: GroupView[];
+  notes: string[];
 }
 
 export type ServerMessage = { type: 'state'; state: DashboardState };

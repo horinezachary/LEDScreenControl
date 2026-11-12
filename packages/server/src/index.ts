@@ -5,7 +5,8 @@ import type { AddressInfo } from 'node:net';
 import { loadConfig, type Config } from './config.js';
 import { Monitor } from './monitor.js';
 import { createHttpServer } from './http.js';
-import { startDemoPair, type TesseraSimulator } from './sim/tessera.js';
+import { demoWall, startDemoPair, type TesseraSimulator } from './sim/tessera.js';
+import { levelOf, startSyslog, type SyslogServer } from './syslog.js';
 import { APP_VERSION } from './version.js';
 
 export interface StartOptions {
@@ -17,6 +18,8 @@ export interface StartOptions {
   port?: number;
   /** Adds two simulated SX40s (a primary and its backup) next to the configured processors. */
   simulate?: boolean;
+  /** Overrides syslogPort in config.json (0 turns it off). */
+  syslogPort?: number;
   log?: (line: string) => void;
 }
 
@@ -27,6 +30,7 @@ export interface RunningServer {
   config: Config;
   monitor: Monitor;
   simulators: TesseraSimulator[];
+  syslog?: SyslogServer;
   close(): Promise<void>;
 }
 
@@ -46,6 +50,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     sims.forEach((sim, i) => {
       monitor.add({ id: `sim-${sim.options.serial}`, kind: 'brompton', host: '127.0.0.1', port: ports[i] });
     });
+    monitor.addWall(demoWall(`sim-${sims[0].options.serial}`, `sim-${sims[1].options.serial}`));
     log(`Simulating two SX40s on ports ${ports.join(' and ')}. Faults: GET http://127.0.0.1:${ports[0]}/sim/scenario?set=signal-loss`);
   }
 
@@ -58,11 +63,16 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     });
   });
   const boundPort = (server.address() as AddressInfo).port;
+  const syslogPort = opts.syslogPort ?? config.syslogPort;
+  const syslog = syslogPort > 0
+    ? await startSyslog(syslogPort, (address, msg) => monitor.syslog(address, levelOf(msg.severity), msg.text), log)
+    : undefined;
   monitor.start();
   monitor.events.add({ level: 'info', message: `Monitor ${APP_VERSION} started, watching ${monitor.state().processors.length} processor(s)` });
 
   const urls = lanUrls(boundPort);
   log(`LED Monitor ${APP_VERSION} on ${urls.join(', ')}`);
+  if (syslog) log(`Listening for processor syslog on UDP ${syslog.port}`);
 
   return {
     port: boundPort,
@@ -70,8 +80,10 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     config,
     monitor,
     simulators,
+    syslog,
     async close() {
       monitor.stop();
+      await syslog?.close();
       await new Promise<void>((resolve) => server.close(() => resolve()));
       server.closeAllConnections?.();
       await Promise.all(simulators.map((s) => s.close()));
