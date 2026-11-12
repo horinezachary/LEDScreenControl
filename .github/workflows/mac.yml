@@ -1,0 +1,26 @@
+name: Mac app
+# Builds the launcher app on a Mac and keeps it as a download on the run for 14 days.
+# Runs on pull requests and main; the version inside comes from scripts/app-version.sh.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    name: Build LED Monitor.app
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and package
+        run: scripts/build.sh mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LED Monitor (macOS)
+          path: packages/launcher/release/*.dmg
+          retention-days: 14

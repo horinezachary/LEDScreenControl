@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22 is the oldest Node the server supports; 24 is current.
+        node: [22, 24]
+    env:
+      # CI never runs the launcher, so skip Electron's binary download.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: The built server starts with the simulator and serves the dashboard
+        run: |
+          node packages/server/dist/cli.cjs --simulate --port 8089 --data ./ci-data > server.log 2>&1 &
+          pid=$!
+          curl -fs --retry 15 --retry-delay 1 --retry-connrefused http://127.0.0.1:8089/healthz || { cat server.log; exit 1; }
+          sleep 7
+          curl -fs http://127.0.0.1:8089/api/state | grep -q '"reachable":true' || { cat server.log; exit 1; }
+          curl -fs http://127.0.0.1:8089/ | grep -qi '<div id="root">' || { cat server.log; exit 1; }
+          kill $pid
