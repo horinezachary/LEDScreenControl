@@ -108,6 +108,8 @@ export interface ProcessorSnapshot {
   topology?: ProcessorTopology;
   /** Presets stored on the processor, for the preset control. */
   presets?: { number: number; name: string }[];
+  /** A line on what this processor cannot report, shown on its card (VX Pro over its control protocol). */
+  note?: string;
   /** What the dashboard may ask this processor to do. Missing when controls are off or the driver has none. */
   controls?: ControlCapabilities;
 }

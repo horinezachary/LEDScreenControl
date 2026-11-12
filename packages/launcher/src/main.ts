@@ -1,4 +1,4 @@
-// LED Monitor's menu bar app. It runs the monitoring server inside itself, so there is nothing else to install, and
+// LED Monitor's menu bar app (the notification area on Windows). It runs the monitoring server inside itself, so there is nothing else to install, and
 // gives a menu to open the dashboard, copy the link for others, open the settings folder and turn demo mode on or off.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -123,9 +123,15 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     app.dock?.hide();
-    const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'trayTemplate.png'));
-    icon.setTemplateImage(true);
+    // The Mac menu bar takes a black template image it recolours; the Windows notification area shows the app icon.
+    const icon =
+      process.platform === 'darwin'
+        ? nativeImage.createFromPath(path.join(__dirname, 'assets', 'trayTemplate.png'))
+        : nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png')).resize({ width: 32, height: 32 });
+    if (process.platform === 'darwin') icon.setTemplateImage(true);
     tray = new Tray(icon);
+    // Windows opens a tray icon's menu on right click only; open it on a left click too.
+    if (process.platform === 'win32') tray.on('click', () => tray?.popUpContextMenu());
     buildMenu();
     await start();
     // Keep the status line in the menu current.

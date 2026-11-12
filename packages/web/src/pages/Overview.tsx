@@ -53,6 +53,8 @@ function ProcessorCard({ p, now, go }: { p: ProcessorView; now: number; go: (pat
         </p>
       )}
 
+      {p.reachable && p.note && <p className="note">{p.note}</p>}
+
       {p.alerts.length > 0 && (
         <ul className="alerts">
           {p.alerts.map((a) => (

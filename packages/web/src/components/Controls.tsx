@@ -23,7 +23,7 @@ export function Controls({ p }: { p: ProcessorView }) {
   }, [p.brightness]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!caps) {
-    return <p className="sub">This processor has no controls on the dashboard{p.kind === 'vxpro' ? '' : ', or controls are turned off in the settings'}.</p>;
+    return <p className="sub">Controls are turned off in the settings, or this processor has none on the dashboard.</p>;
   }
 
   const send = async (req: ControlRequest) => {

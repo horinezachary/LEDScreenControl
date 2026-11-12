@@ -68,10 +68,10 @@ describe('monitor', () => {
     expect(v.lastError).toMatch(/refused/);
   });
 
-  it('shows VX Pro as not supported yet instead of failing', () => {
+  it('gives VX Pro processors a driver', () => {
     const config = parseConfig({ processors: [{ id: 'v', kind: 'vxpro', host: '10.0.0.2' }] });
     const state = new Monitor(config).state();
-    expect(state.processors[0]).toMatchObject({ severity: 'unknown', lastError: expect.stringMatching(/phase 5/) });
+    expect(state.processors[0]).toMatchObject({ severity: 'unknown', lastError: undefined });
   });
 });
 
@@ -102,7 +102,7 @@ describe('server', () => {
       });
       ws.on('error', reject);
     });
-    expect(state.processors.map((p) => p.name).sort()).toEqual(['IMAG Left (simulated)', 'Stage Backup (simulated)', 'Stage Main (simulated)']);
+    expect(state.processors.map((p) => p.name).sort()).toEqual(['IMAG Left (simulated)', 'Side Screens (simulated VX2000 Pro)', 'Stage Backup (simulated)', 'Stage Main (simulated)']);
     expect(state.walls.map((w) => w.name)).toEqual(['Main stage wall (simulated)', 'IMAG Left screen']);
     expect(state.severity).toBe('ok');
   }, 15000);

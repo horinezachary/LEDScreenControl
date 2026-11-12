@@ -224,7 +224,7 @@ function Processors({ draft, update, subnets }: Edit & { subnets: string[] }) {
               <th>Kind</th>
               <th>Address</th>
               <th>Port</th>
-              <th>Port capacity (COEX)</th>
+              <th>Port capacity (NovaStar)</th>
               <th />
             </tr>
           </thead>
@@ -253,7 +253,7 @@ function Processors({ draft, update, subnets }: Edit & { subnets: string[] }) {
                   <NumberField value={p.port} placeholder={p.kind === 'coex' ? '8001' : p.kind === 'vxpro' ? '15200' : '80'} onChange={(v) => update((d) => void (d.processors[i].port = v))} label="Port" />
                 </td>
                 <td>
-                  {p.kind === 'coex' ? (
+                  {p.kind === 'coex' || p.kind === 'vxpro' ? (
                     <NumberField value={p.portCapacity} placeholder="650000" onChange={(v) => update((d) => void (d.processors[i].portCapacity = v))} label="Pixels per output port" />
                   ) : (
                     <span className="sub">—</span>
@@ -278,7 +278,7 @@ function Processors({ draft, update, subnets }: Edit & { subnets: string[] }) {
       <h3>Find processors on the network</h3>
       <p className="sub">
         Asks every address in a /24 the read-only identity questions of Tessera and COEX. Nothing is sent that changes
-        a processor. VX Pro processors are not found this way; add them by address.
+        a processor. VX Pro processors that do not answer the COEX API are not found this way; add them by address.
       </p>
       <div className="inline">
         <label>

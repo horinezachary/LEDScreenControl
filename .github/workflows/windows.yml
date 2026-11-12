@@ -1,0 +1,29 @@
+name: Windows app
+# Builds the Windows installer (unsigned) and keeps it as a download on the run for 14 days.
+# Runs on pull requests and main; the version inside comes from scripts/app-version.sh.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    name: Build LED Monitor installer
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and package
+        run: scripts/build.sh windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LED Monitor (Windows)
+          path: packages/launcher/release/*.exe
+          retention-days: 14

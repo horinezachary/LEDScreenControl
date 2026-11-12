@@ -43,6 +43,7 @@ export function ProcessorPage({ state, id, now }: { state: DashboardState; id: s
           </span>
         </div>
         {!p.reachable && <p className="note">{p.lastError ?? 'Waiting for the first answer.'}</p>}
+        {p.reachable && p.note && <p className="note">{p.note}</p>}
         {p.alerts.length > 0 && (
           <ul className="alerts">
             {p.alerts.map((a) => (
@@ -86,7 +87,11 @@ export function ProcessorPage({ state, id, now }: { state: DashboardState; id: s
             <tbody>
               <Row k="Brightness">{p.brightness !== undefined ? (p.brightnessUnit === '%' ? `${Math.round(p.brightness)}%` : `${p.brightness} nits`) : '—'}</Row>
               <Row k="Preset">{p.preset ? `${p.preset.number} · ${p.preset.name}` : '—'}</Row>
-              <Row k="Blackout / freeze">{`${p.blackout ? 'Blackout on' : 'Blackout off'} · ${p.freeze ? 'frozen' : 'not frozen'}`}</Row>
+              <Row k="Blackout / freeze">
+                {p.blackout === undefined && p.freeze === undefined
+                  ? '—'
+                  : `${p.blackout === undefined ? 'Blackout unknown' : p.blackout ? 'Blackout on' : 'Blackout off'} · ${p.freeze === undefined ? 'freeze unknown' : p.freeze ? 'frozen' : 'not frozen'}`}
+              </Row>
               <Row k="Genlock">{p.genlock ? `${p.genlock.source}${p.genlock.rate ? ` · ${rate(p.genlock.rate)} Hz` : ''}` : '—'}</Row>
               <Row k="Failover">
                 {p.failover

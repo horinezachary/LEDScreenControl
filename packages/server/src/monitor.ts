@@ -6,6 +6,7 @@ import { worstSeverity } from '@ledmon/shared';
 import type { Config } from './config.js';
 import type { Driver } from './drivers/types.js';
 import { bromptonDriver } from './drivers/brompton.js';
+import { vxproDriver } from './drivers/vxpro.js';
 import { coexDriver } from './drivers/coex.js';
 import { EventLog } from './events.js';
 import { History } from './history.js';
@@ -14,13 +15,13 @@ import { evaluate, loopAlerts } from './rules.js';
 import { Topology } from './topology.js';
 import { APP_VERSION } from './version.js';
 
-const PHASE_NOTE: Record<string, string> = {
-  vxpro: 'NovaStar VX Pro support is not built yet (planned for phase 5).',
-};
+const PHASE_NOTE: Record<string, string> = {};
+
 
 export function driverFor(p: ProcessorConfig): Driver | undefined {
   if (p.kind === 'brompton') return bromptonDriver(p);
   if (p.kind === 'coex') return coexDriver(p);
+  if (p.kind === 'vxpro') return vxproDriver(p);
   return undefined;
 }
 
@@ -121,7 +122,7 @@ export class Monitor extends EventEmitter {
       loops: [],
       severity: 'unknown',
       alerts: [],
-      lastError: driver ? undefined : PHASE_NOTE[p.kind],
+      lastError: driver ? undefined : (PHASE_NOTE[p.kind] ?? `No driver for ${p.kind} processors.`),
       controls: this.config.controls ? driver?.capabilities : undefined,
     };
     const entry: Entry = { config: p, driver, view, loopsSeen: new Map(), extra };
@@ -317,7 +318,7 @@ function stripView(v: ProcessorView): ProcessorSnapshot {
 function describe(req: ControlRequest, p: ProcessorView): string {
   switch (req.action) {
     case 'brightness':
-      return `brightness set to ${req.value}${p.brightnessUnit === '%' ? '%' : ' nits'}`;
+      return `brightness set to ${req.value}${(p.controls?.brightness?.unit ?? p.brightnessUnit) === '%' ? '%' : ' nits'}`;
     case 'blackout':
       return req.value ? 'blackout on' : 'blackout off';
     case 'freeze':

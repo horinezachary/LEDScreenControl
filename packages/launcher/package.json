@@ -9,7 +9,8 @@
     "build": "node build.mjs",
     "typecheck": "tsc -p .",
     "start": "npm run build && electron .",
-    "package:mac": "npm run build && electron-builder --mac --publish never"
+    "package:mac": "npm run build && electron-builder --mac --publish never",
+    "package:windows": "npm run build && electron-builder --win --publish never"
   },
   "devDependencies": {
     "electron": "^38.0.0",
@@ -48,8 +49,22 @@
     },
     "win": {
       "target": [
-        "nsis"
-      ]
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "artifactName": "LED-Monitor-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "LED Monitor",
+      "runAfterFinish": true
     }
   }
 }
