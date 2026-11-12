@@ -38,6 +38,7 @@ export class CoexSimulator {
   brightness = 0.8;
   displayMode = 0;
   preset = 1;
+  source = 0;
   private server?: http.Server;
   private rand: () => number;
   private readonly started = Date.now();
@@ -78,6 +79,7 @@ export class CoexSimulator {
       const name = url.searchParams.get('set') as CoexScenario | null;
       if (name && (COEX_SCENARIOS as readonly string[]).includes(name)) {
         this.scenario = name;
+        if (name === 'normal') this.source = 0;
         res.writeHead(200, { 'content-type': 'text/plain' }).end(`scenario: ${name}\n`);
       } else {
         res.writeHead(400, { 'content-type': 'text/plain' }).end(`Use ?set= with one of: ${COEX_SCENARIOS.join(', ')}\n`);
@@ -103,6 +105,7 @@ export class CoexSimulator {
       if (url.pathname === '/api/v1/screen/brightness' && typeof b.brightness === 'number') this.brightness = b.brightness;
       else if (url.pathname === '/api/v1/screen/output/displaymode' && typeof b.value === 'number') this.displayMode = b.value;
       else if (url.pathname === '/api/v1/preset/current/update' && typeof b.sequenceNumber === 'number') this.preset = b.sequenceNumber;
+      else if (url.pathname === '/api/v1/screen/layer/input' && Array.isArray(b.layers)) this.source = Number((b.layers[0] as { source?: string }).source ?? 0);
       ok({});
       return;
     }
@@ -164,7 +167,7 @@ export class CoexSimulator {
           screenID: 'screen-1',
           screenName: `${this.options.name.replace(/ \(simulated\)$/, '')} screen`,
           workingMode: 0,
-          layersInWorkingMode: [{ layers: [{ id: 0, layerIndex: 0, source: 0 }] }],
+          layersInWorkingMode: [{ layers: [{ id: 0, layerIndex: 0, source: this.source }] }],
           canvases: [
             {
               canvasID: 0,
@@ -188,7 +191,7 @@ export class CoexSimulator {
     const signal = this.scenario !== 'signal-loss';
     return [
       { id: 0, name: 'HDMI 1', type: 1, actualResolution: signal ? { width: 1920, height: 1080 } : { width: 0, height: 0 }, actualRefreshRate: signal ? 59.94 : 0 },
-      { id: 1, name: 'DP 1', type: 2, actualResolution: { width: 0, height: 0 }, actualRefreshRate: 0 },
+      { id: 1, name: 'DP 1', type: 2, actualResolution: { width: 3840, height: 2160 }, actualRefreshRate: 50 },
     ];
   }
 
