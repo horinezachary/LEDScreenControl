@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build LED Monitor.app
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
