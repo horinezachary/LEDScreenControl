@@ -14,7 +14,7 @@
 // non-zero ack byte means the processor refused.
 import net from 'node:net';
 import type { ControlCapabilities, ControlRequest, ProcessorConfig } from '@ledmon/shared';
-import { coexDriver, DEFAULT_PORT_CAPACITY } from './coex.js';
+import { coexDriver } from './coex.js';
 import type { Driver, PolledData } from './types.js';
 
 export const VX_PORT = 15200;
@@ -143,7 +143,7 @@ export interface VxOptions {
 
 export function vxproDriver(config: ProcessorConfig, opts: VxOptions = {}): Driver {
   const coexPort = opts.coexPort ?? 8001;
-  const coex = coexPort ? coexDriver({ ...config, port: coexPort, portCapacity: config.portCapacity ?? DEFAULT_PORT_CAPACITY }) : undefined;
+  const coex = coexPort ? coexDriver({ ...config, port: coexPort }) : undefined;
   const tcpPort = config.port ?? VX_PORT;
   let mode: 'unknown' | 'coex' | 'tcp' = coex ? 'unknown' : 'tcp';
   let lastCoexTry = 0;

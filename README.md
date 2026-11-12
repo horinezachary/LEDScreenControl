@@ -23,8 +23,9 @@ Design: [LED Processor Monitor: Design](https://claude.ai/artifact/Tk6LkG374Yuy8
 - NovaStar COEX processors (MX40 Pro, CX40 Pro) over the COEX Open API on port 8001: temperatures, fans, inputs,
   brightness, blackout and freeze, preset, backup, and every cabinet with its health. Their walls are drawn from the
   processor's own cabinet map, one chain per output port in connection order, with each port's load: the pixels of
-  its cabinets against the port's capacity (650,000 by default, a 1G port at 8 bit and 60 Hz; set `"portCapacity"`
-  on the processor to change it). Alerts for ports at 90% and over 100%, output faults, cabinets that stop answering
+  its cabinets against the port's capacity: 650,000 pixels per Gbit/s at 60 Hz, times the port speed the processor
+  reports (a CX40 Pro's 5G ports: 3,250,000), scaled by its output frame rate. Set `"portCapacity"` on the processor
+  to override it, for example at 10 or 12 bit. Alerts for ports at 90% and over 100%, output faults, cabinets that stop answering
   or report faults, and broken links between cabinets.
 - Processor syslog: point Tessera's syslog at this machine (UDP 5514) and every line lands in the event log under
   the processor that sent it. This is how Tessera reports things its API does not, such as genlock loss.

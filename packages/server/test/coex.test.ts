@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { parseConfig } from '../src/config.js';
 import { Monitor } from '../src/monitor.js';
 import { CoexSimulator, type CoexScenario } from '../src/sim/coex.js';
@@ -59,7 +60,7 @@ describe('COEX driver', () => {
     expect(chains).toHaveLength(8);
     expect(chains[0]).toMatchObject({ label: 'Port 1', tileCount: 8, loop: 'none', from: { label: '1', state: 'ok' } });
     expect(chains[0].from.load).toEqual({ pixels: 8 * 256 * 256, capacity: 650_000, percent: (8 * 65536 * 100) / 650_000 });
-    expect(chains[0].tiles[0].label).toBe('Cabinet 1 (port 1, #1 in chain)');
+    expect(chains[0].tiles[0].label).toBe('Port 1, cabinet 1');
   });
 
   it.each([
@@ -99,5 +100,32 @@ describe('COEX driver', () => {
     const sim = new CoexSimulator({ name: 'x', serial: '1' });
     const d = parseCoex({ hw: {}, monitor: sim.monitor(), screen: sim.screen() }, 1_000_000);
     expect(d.topology?.groups[0].chains[0].from.load?.percent).toBeCloseTo(52.4, 1);
+  });
+});
+
+describe('a real CX40 Pro with 5G ports', () => {
+  const fx = JSON.parse(readFileSync(new URL('./fixtures/coex-cx40pro-5g.json', import.meta.url), 'utf8'));
+  const chainsOf = (d: ReturnType<typeof parseCoex>) => d.topology!.groups[0].chains;
+
+  it('measures each port against 5G at the output frame rate', () => {
+    const d = parseCoex(fx);
+    const chains = chainsOf(d);
+    expect(chains.map((c) => c.label)).toEqual(['Port 1', 'Port 3', 'Port 5']);
+    expect(chains.map((c) => c.tileCount)).toEqual([4, 8, 8]);
+    expect(chains[1].from.load).toEqual({ pixels: 8 * 320 * 320, capacity: 3_250_000, percent: (8 * 102_400 * 100) / 3_250_000 });
+    expect(chains.every((c) => c.from.state === 'ok')).toBe(true);
+    expect(d.topology!.notes).toContain('Port capacity 3,250,000 pixels: 5G ports at 60 Hz, 8 bit.');
+  });
+
+  it('halves the capacity at 120 Hz, and takes the capacity from Settings when set', () => {
+    expect(chainsOf(parseCoex({ ...fx, output: [{ currentFrameRate: 120 }] }))[0].from.load?.capacity).toBe(1_625_000);
+    expect(chainsOf(parseCoex(fx, 2_000_000))[0].from.load?.capacity).toBe(2_000_000);
+    expect(chainsOf(parseCoex({ ...fx, hw: { ...fx.hw, netPortBandWidth: undefined } }))[0].from.load?.capacity).toBe(650_000);
+  });
+
+  it('labels cabinets by port and chain position, with the receiving card temperature', () => {
+    const tile = chainsOf(parseCoex(fx))[0].tiles[0];
+    expect(tile.label).toBe('Port 1, cabinet 1');
+    expect(tile.detail).toMatch(/41 °C|receiving card errors/);
   });
 });

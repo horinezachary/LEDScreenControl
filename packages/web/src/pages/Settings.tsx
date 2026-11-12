@@ -254,7 +254,7 @@ function Processors({ draft, update, subnets }: Edit & { subnets: string[] }) {
                 </td>
                 <td>
                   {p.kind === 'coex' || p.kind === 'vxpro' ? (
-                    <NumberField value={p.portCapacity} placeholder="650000" onChange={(v) => update((d) => void (d.processors[i].portCapacity = v))} label="Pixels per output port" />
+                    <NumberField value={p.portCapacity} placeholder="From the processor" onChange={(v) => update((d) => void (d.processors[i].portCapacity = v))} label="Pixels per output port" />
                   ) : (
                     <span className="sub">—</span>
                   )}

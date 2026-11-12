@@ -16,7 +16,7 @@ export interface ProcessorConfig {
   host: string;
   /** HTTP port. Brompton defaults to 80, COEX to 8001. */
   port?: number;
-  /** COEX: pixels one output port can drive, for the port load bars. Defaults to 650,000 (a 1G port at 8 bit, 60 Hz). */
+  /** COEX: pixels one output port can drive, for the port load bars. Unset: worked out from the port speed and frame rate the processor reports. */
   portCapacity?: number;
 }
 
