@@ -80,7 +80,7 @@ dashboard). Neither the Mac app nor the Windows installer is signed, so macOS as
 Without the app (any machine with Node 22):
 
 ```sh
-scripts/build.sh run            # demo mode on http://localhost:8080
+scripts/build.sh run            # demo mode on http://localhost:6060
 scripts/deploy.sh headless      # build and keep it running under pm2 as "led-monitor"
 ```
 
@@ -93,7 +93,7 @@ settings folder (**Open Settings Folder**, or `data/` when running headless); af
 
 ```json
 {
-  "port": 8080,
+  "port": 6060,
   "processors": [
     { "name": "Stage Main", "kind": "brompton", "host": "10.10.20.11" },
     { "name": "Stage Backup", "kind": "brompton", "host": "10.10.20.12" }
@@ -161,8 +161,8 @@ To try syslog: `logger -n 127.0.0.1 -P 5514 -d "Genlock lost"` (macOS and Linux)
 
 ```sh
 npm install
-npm run dev                     # server with the simulator on :8080, from source
-npm run dev -w @ledmon/web      # dashboard with hot reload on :5173, talking to :8080
+npm run dev                     # server with the simulator on :6060, from source
+npm run dev -w @ledmon/web      # dashboard with hot reload on :5173, talking to :6060
 npm test
 ```
 

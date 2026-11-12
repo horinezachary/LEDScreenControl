@@ -5,7 +5,7 @@
 #   scripts/build.sh mac      all of that, then package the Mac app (packages/launcher/release/*.dmg). Run on a Mac.
 #   scripts/build.sh windows  all of that, then package the Windows installer (packages/launcher/release/*.exe). Run
 #                             on Windows from Git Bash.
-#   scripts/build.sh run      build, then run the server here in demo mode (two simulated SX40s) on port 8080
+#   scripts/build.sh run      build, then run the server here in demo mode (two simulated SX40s) on port 6060
 #
 # SKIP_TESTS=1 skips typecheck and tests. The version comes from the release tags (scripts/app-version.sh).
 set -euo pipefail
@@ -72,7 +72,7 @@ case "$mode" in
     fi
     ;;
   run)
-    say "Starting the server in demo mode. Open http://localhost:8080 (Ctrl+C to stop)"
+    say "Starting the server in demo mode. Open http://localhost:6060 (Ctrl+C to stop)"
     exec node packages/server/dist/cli.cjs --simulate --data ./data
     ;;
   *)

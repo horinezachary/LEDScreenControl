@@ -19,7 +19,7 @@ describe('config', () => {
   it('writes a starter file and reads it back', () => {
     const dir = tmp();
     const c = loadConfig(dir);
-    expect(c.port).toBe(8080);
+    expect(c.port).toBe(6060);
     expect(c.processors).toEqual([]);
     expect(fs.existsSync(path.join(dir, 'config.json'))).toBe(true);
   });

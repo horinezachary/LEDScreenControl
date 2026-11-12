@@ -62,9 +62,9 @@ async function restart(): Promise<void> {
 function readPort(): number {
   try {
     const c = JSON.parse(fs.readFileSync(configPath(dataDir()), 'utf8')) as { port?: unknown };
-    return typeof c.port === 'number' ? c.port : 8080;
+    return typeof c.port === 'number' ? c.port : 6060;
   } catch {
-    return 8080;
+    return 6060;
   }
 }
 

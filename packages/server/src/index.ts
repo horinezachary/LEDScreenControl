@@ -30,7 +30,7 @@ export interface StartOptions {
 
 export interface RunningServer {
   port: number;
-  /** Addresses other people on the network can open, e.g. http://10.10.20.5:8080. */
+  /** Addresses other people on the network can open, e.g. http://10.10.20.5:6060. */
   urls: string[];
   config: Config;
   monitor: Monitor;

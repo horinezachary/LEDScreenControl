@@ -57,7 +57,7 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
 };
 
 export const DEFAULT_CONFIG: Config = {
-  port: 8080,
+  port: 6060,
   pollIntervalMs: 5000,
   requestTimeoutMs: 3000,
   processors: [],
