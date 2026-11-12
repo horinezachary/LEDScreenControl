@@ -160,6 +160,8 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
 .link { flex: 1 1 8px; min-width: 6px; height: 0; border-top: 2px solid var(--accent); }
 .link.link-standby, .link.link-unknown { border-top-style: dashed; border-top-color: #56607a; }
 .link.link-lost { border-top-style: dashed; border-top-color: var(--crit); }
+.chain.single .link { flex: 0 0 24px; }
+.chain.single::after { content: ''; flex: 1; }
 .tiles { display: flex; gap: 3px; align-items: center; flex: none; overflow: hidden; }
 .tile { width: 16px; height: 20px; border-radius: 3px; background: #2b3442; border: 1px solid #3b4657; display: inline-block; flex: none; }
 .tile-ok { background: #1d3a30; border-color: var(--ok-line); }
