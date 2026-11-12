@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { AuthStatus, EmailSettings, GroupLayout, ProcessorConfig, ProcessorKind, ScanResult, WallLayout } from '@ledmon/shared';
+import type { AuthStatus, DashboardState, EmailSettings, GroupLayout, ProcessorConfig, ProcessorKind, ScanResult, WallLayout } from '@ledmon/shared';
+import { wallGroupsFromLoops } from '@ledmon/shared';
 import { api } from '../api';
 
 // The settings page: everything in config.json, behind the one admin password. Saving checks the whole file the
@@ -29,10 +30,10 @@ export interface AppSettings {
 const SECTIONS = ['Processors', 'Walls', 'Alerts', 'Email', 'General', 'Password'] as const;
 type Section = (typeof SECTIONS)[number];
 
-export function SettingsPage({ auth, setAuth }: { auth?: AuthStatus; setAuth: (a: AuthStatus) => void }) {
+export function SettingsPage({ auth, setAuth, state }: { auth?: AuthStatus; setAuth: (a: AuthStatus) => void; state?: DashboardState }) {
   if (!auth) return <p className="empty">Checking…</p>;
   if (!auth.unlocked) return <Unlock auth={auth} setAuth={setAuth} />;
-  return <Editor setAuth={setAuth} />;
+  return <Editor setAuth={setAuth} state={state} />;
 }
 
 function Unlock({ auth, setAuth }: { auth: AuthStatus; setAuth: (a: AuthStatus) => void }) {
@@ -95,7 +96,7 @@ function Unlock({ auth, setAuth }: { auth: AuthStatus; setAuth: (a: AuthStatus) 
   );
 }
 
-function Editor({ setAuth }: { setAuth: (a: AuthStatus) => void }) {
+function Editor({ setAuth, state }: { setAuth: (a: AuthStatus) => void; state?: DashboardState }) {
   const [saved, setSaved] = useState<AppSettings>();
   const [draft, setDraft] = useState<AppSettings>();
   const [subnets, setSubnets] = useState<string[]>([]);
@@ -168,7 +169,7 @@ function Editor({ setAuth }: { setAuth: (a: AuthStatus) => void }) {
       </div>
 
       {section === 'Processors' && <Processors draft={draft} update={update} subnets={subnets} />}
-      {section === 'Walls' && <Walls draft={draft} update={update} />}
+      {section === 'Walls' && <Walls draft={draft} update={update} state={state} />}
       {section === 'Alerts' && <AlertLimits draft={draft} update={update} />}
       {section === 'Email' && <Email draft={draft} update={update} />}
       {section === 'General' && <General draft={draft} update={update} />}
@@ -321,7 +322,18 @@ function Processors({ draft, update, subnets }: Edit & { subnets: string[] }) {
   );
 }
 
-function Walls({ draft, update }: Edit) {
+function Walls({ draft, update, state }: Edit & { state?: DashboardState }) {
+  const live = (id: string) => state?.processors.find((p) => p.id === id);
+  /** Fills a wall's XD pairs and chains from what its primary processor reports, and its backup from the failover partner. */
+  const fillFromProcessor = (wi: number) =>
+    update((d) => {
+      const w = d.walls[wi];
+      const p = live(w.primary);
+      if (!p) return;
+      w.groups = wallGroupsFromLoops(p.loops, w.groups, p.tiles?.associated ?? 0);
+      const partner = p.failover?.partnerSerial && state?.processors.find((x) => x.id !== p.id && x.serial === p.failover?.partnerSerial);
+      if (partner && !w.backup) w.backup = partner.id;
+    });
   const procs = draft.processors.filter((p) => p.kind === 'brompton');
   const addWall = () =>
     update((d) =>
@@ -342,6 +354,10 @@ function Walls({ draft, update }: Edit) {
           pair, and for each pair of XD boxes the tiles on each port's chain. A chain runs from port N on the left box
           to port N on the right box as a cable loop. NovaStar COEX walls come from the processor and need nothing here.
         </p>
+        <p className="sub">
+          "Fill in from" reads the XD pairs and cabled ports from the processor's cable loop reports. Tessera does not say
+          how many tiles are on each chain, so new chains share the processor's tile count evenly: check each one.
+        </p>
         {procs.length === 0 && <p className="note">Add a Brompton processor first.</p>}
         <button type="button" className="btn" onClick={addWall} disabled={procs.length === 0}>
           Add a wall
@@ -351,9 +367,14 @@ function Walls({ draft, update }: Edit) {
         <section key={wi} className="card form">
           <div className="section-head">
             <h3>{w.name || 'Wall'}</h3>
-            <button type="button" className="btn" onClick={() => update((d) => void d.walls.splice(wi, 1))}>
-              Remove wall
-            </button>
+            <div className="inline">
+              <button type="button" className="btn" disabled={!live(w.primary)?.loops.length} onClick={() => fillFromProcessor(wi)}>
+                Fill in from {live(w.primary)?.name ?? 'the processor'}
+              </button>
+              <button type="button" className="btn" onClick={() => update((d) => void d.walls.splice(wi, 1))}>
+                Remove wall
+              </button>
+            </div>
           </div>
           <div className="inline">
             <label>

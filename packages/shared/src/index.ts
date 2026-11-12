@@ -367,3 +367,44 @@ export function worstSeverity(list: Severity[]): Severity {
   for (const s of list) worst = Math.min(worst, SEVERITY_ORDER.indexOf(s));
   return SEVERITY_ORDER[worst];
 }
+
+// ---- Building a Brompton wall from what the processor reports ----
+
+/** One XD port in a cable loop report, e.g. "C4" is trunk C, port 4. */
+function trunkPort(s?: string): { trunk: string; port: number } | undefined {
+  const m = /^([A-Z]+)(\d+)$/i.exec(s ?? '');
+  return m ? { trunk: m[1].toUpperCase(), port: Number(m[2]) } : undefined;
+}
+
+/**
+ * The XD box pairs and chains a Tessera processor's cable loop reports show: one group per loop number, the trunk the
+ * loops start from on the left and the one they come back to on the right, and a chain on every XD port the
+ * processor names. Tessera does not report how many tiles are on each chain, so a chain keeps its count from
+ * `existing` when that has one, and otherwise gets an even share of `tiles` (at least 1) to be corrected by hand.
+ */
+export function wallGroupsFromLoops(loops: CableLoop[], existing: GroupLayout[] = [], tiles = 0, xdPorts = 10): GroupLayout[] {
+  const byIndex = new Map<number, CableLoop[]>();
+  for (const l of loops) byIndex.set(l.index, [...(byIndex.get(l.index) ?? []), l]);
+  const groups: { left: string; right?: string; ports: Set<number> }[] = [];
+  for (const [, list] of [...byIndex].sort((a, b) => a[0] - b[0])) {
+    const found = list.find((l) => l.found && trunkPort(l.port) && trunkPort(l.to));
+    const letters = [...new Set(list.flatMap((l) => [trunkPort(l.port)?.trunk, trunkPort(l.to)?.trunk]).filter((x): x is string => !!x))].sort();
+    const left = found ? trunkPort(found.port)!.trunk : letters[0];
+    if (!left) continue;
+    const right = found ? trunkPort(found.to)!.trunk : letters.find((x) => x !== left);
+    const ports = new Set<number>();
+    for (const l of list) for (const tp of [trunkPort(l.port), trunkPort(l.to)]) if (tp && tp.port >= 1 && tp.port <= xdPorts) ports.add(tp.port);
+    groups.push({ left, right, ports });
+  }
+  const chainCount = groups.reduce((n, g) => n + g.ports.size, 0);
+  const share = chainCount ? Math.max(1, Math.round(tiles / chainCount)) : 1;
+  return groups.map((g) => {
+    const old = existing.find((e) => e.left.trunk === g.left && (e.right?.trunk ?? undefined) === g.right);
+    const box = (trunk: string, prev?: BoxLayout): BoxLayout => ({ ...prev, name: prev?.name ?? `XD ${trunk}`, trunk, ports: prev?.ports ?? xdPorts });
+    return {
+      left: box(g.left, old?.left),
+      right: g.right ? box(g.right, old?.right) : undefined,
+      chains: Array.from({ length: xdPorts }, (_, i) => (g.ports.has(i + 1) ? (old?.chains[i] || share) : 0)),
+    };
+  });
+}

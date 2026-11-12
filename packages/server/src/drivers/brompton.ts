@@ -257,12 +257,14 @@ export function parseLoops(loops: Tree): CableLoop[] {
   for (const [i, loop] of entries(loops)) {
     const index = Number(i);
     const text = str(obj(loop).state) ?? '';
-    const parts = text.split(/,\s*(?=(?:no-)?loop-found)/i).map((x) => x.trim()).filter(Boolean);
+    // Tessera's help lists the states loop-found, no-loop-found, incorrect-loop-found and one-to-many-error.
+    const parts = text.split(/,\s*(?=(?:(?:no-|incorrect-)?loop-found|one-to-many-error))/i).map((x) => x.trim()).filter(Boolean);
     parts.forEach((state, n) => {
-      const m = /^(no-)?loop-found:\s*([A-Za-z]+\d+)?\s*(?:->\s*([A-Za-z]+\d+))?/i.exec(state);
-      const found = !!m && !m[1];
+      const m = /^((?:no-|incorrect-)?loop-found|one-to-many-error):\s*([A-Za-z]+\d+)?\s*(?:->\s*([A-Za-z]+\d+))?/i.exec(state);
+      const found = !!m && m[1].toLowerCase() === 'loop-found';
       const port = m?.[2]?.toUpperCase();
-      out.push({ index, key: `${index}:${port ?? `#${n}`}`, port, to: found ? m?.[3]?.toUpperCase() : undefined, state, found });
+      // An incorrect loop names the port it wrongly reaches; keep it so the wall builder sees that port too.
+      out.push({ index, key: `${index}:${port ?? `#${n}`}`, port, to: m?.[3]?.toUpperCase(), state, found });
     });
   }
   return out.sort((a, b) => a.index - b.index || (a.port ?? '').localeCompare(b.port ?? '', undefined, { numeric: true }));

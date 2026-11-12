@@ -18,7 +18,7 @@ import type {
 } from '@ledmon/shared';
 import { worstSeverity } from '@ledmon/shared';
 
-const LOOP_FOUND = /loop-found:\s*([A-Za-z]+\d+)\s*->\s*([A-Za-z]+\d+)/;
+const LOOP_FOUND = /^loop-found:\s*([A-Za-z]+\d+)\s*->\s*([A-Za-z]+\d+)/;
 
 export class Topology {
   /** Which loop index each chain was last seen under, per processor, so a lost loop can be pinned to its chain. */
