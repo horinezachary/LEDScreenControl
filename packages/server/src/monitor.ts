@@ -342,10 +342,17 @@ function lowerFirst(s: string): string {
 
 function errorText(err: unknown): string {
   if (err instanceof Error) {
-    const cause = (err as Error & { cause?: { code?: string; message?: string } }).cause;
-    if (cause?.code === 'ECONNREFUSED') return 'connection refused (is IP control enabled?)';
-    if (cause?.code === 'EHOSTUNREACH' || cause?.code === 'ENETUNREACH') return 'host unreachable';
-    if (cause?.code) return `${cause.code}`;
+    // fetch puts the socket error under cause; a raw socket (VX Pro) puts it on the error itself.
+    const code = (err as Error & { cause?: { code?: string } }).cause?.code ?? (err as NodeJS.ErrnoException).code;
+    if (code === 'ECONNREFUSED') return 'connection refused (is IP control enabled?)';
+    if (code === 'EHOSTUNREACH' || code === 'ENETUNREACH') {
+      // macOS answers "host unreachable" for every address on the network when the app has not been allowed to use
+      // the local network, even though the processor is up.
+      return process.platform === 'darwin'
+        ? 'host unreachable (if it answers ping, allow LED Monitor in System Settings → Privacy & Security → Local Network, then restart it)'
+        : 'host unreachable';
+    }
+    if (code) return code;
     return err.message;
   }
   return String(err);

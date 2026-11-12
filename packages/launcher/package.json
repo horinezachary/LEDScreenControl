@@ -41,7 +41,8 @@
       ],
       "identity": null,
       "extendInfo": {
-        "LSUIElement": true
+        "LSUIElement": true,
+        "NSLocalNetworkUsageDescription": "LED Monitor reads the status of the LED processors on your local network and sends the controls you choose."
       }
     },
     "dmg": {
