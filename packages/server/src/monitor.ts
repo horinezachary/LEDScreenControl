@@ -1,13 +1,14 @@
 // Polls every processor on its own timer, keeps the latest snapshot and alerts for each, and logs every change of
 // state as an event. Listeners are told after each poll so the web layer can push the new state.
 import { EventEmitter } from 'node:events';
-import type { Alert, DashboardState, ProcessorConfig, ProcessorSnapshot, ProcessorView } from '@ledmon/shared';
+import type { Alert, DashboardState, ProcessorConfig, ProcessorSnapshot, ProcessorView, WallLayout, WallView } from '@ledmon/shared';
 import { worstSeverity } from '@ledmon/shared';
 import type { Config } from './config.js';
 import type { Driver } from './drivers/types.js';
 import { bromptonDriver } from './drivers/brompton.js';
 import { EventLog } from './events.js';
 import { evaluate, loopAlerts } from './rules.js';
+import { Topology } from './topology.js';
 import { APP_VERSION } from './version.js';
 
 const PHASE_NOTE: Record<string, string> = {
@@ -24,7 +25,7 @@ interface Entry {
   config: ProcessorConfig;
   driver?: Driver;
   view: ProcessorView;
-  loopsSeen: Set<number>;
+  loopsSeen: Map<number, string>;
   timer?: NodeJS.Timeout;
   inFlight?: AbortController;
 }
@@ -33,11 +34,14 @@ export class Monitor extends EventEmitter {
   readonly events: EventLog;
   readonly startedAt = Date.now();
   private entries = new Map<string, Entry>();
+  private walls: WallLayout[];
+  private topology = new Topology();
   private stopped = false;
 
   constructor(private config: Config, dataDir?: string, driverFactory: (p: ProcessorConfig) => Driver | undefined = driverFor) {
     super();
     this.events = new EventLog(dataDir);
+    this.walls = [...config.walls];
     for (const p of config.processors) this.add(p, driverFactory(p));
   }
 
@@ -59,7 +63,12 @@ export class Monitor extends EventEmitter {
       alerts: [],
       lastError: driver ? undefined : PHASE_NOTE[p.kind],
     };
-    this.entries.set(p.id, { config: p, driver, view, loopsSeen: new Set() });
+    this.entries.set(p.id, { config: p, driver, view, loopsSeen: new Map() });
+  }
+
+  /** Adds a wall layout, e.g. the demo wall for the simulated pair. */
+  addWall(layout: WallLayout): void {
+    this.walls.push(layout);
   }
 
   start(): void {
@@ -88,8 +97,28 @@ export class Monitor extends EventEmitter {
       startedAt: this.startedAt,
       severity: worstSeverity(processors.filter((p) => p.severity !== 'unknown').map((p) => p.severity)),
       processors,
+      walls: this.wallViews(),
       events: this.events.recent(100),
     };
+  }
+
+  wallViews(): WallView[] {
+    return this.topology.build(this.walls, new Map([...this.entries].map(([id, e]) => [id, e.view])));
+  }
+
+  /** The processor whose address a syslog message came from, if any. */
+  processorAt(address: string): ProcessorView | undefined {
+    const ip = address.replace(/^::ffff:/, '');
+    for (const e of this.entries.values()) if (e.config.host === ip) return e.view;
+    return undefined;
+  }
+
+  /** Records a syslog line from a processor in the event log. */
+  syslog(address: string, level: 'info' | 'warning' | 'critical', text: string): void {
+    const p = this.processorAt(address);
+    const who = p ? p.name : address.replace(/^::ffff:/, '');
+    this.events.add({ processorId: p?.id, level, message: `${who} (syslog): ${text}`, source: 'syslog' });
+    this.emit('change', p);
   }
 
   /** Polls one processor once. Exposed for tests; the loop calls it on a timer. */

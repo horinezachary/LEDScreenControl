@@ -7,7 +7,7 @@ server, so nothing else needs installing.
 
 Design: [LED Processor Monitor: Design](https://claude.ai/artifact/Tk6LkG374Yuy8QKAyFK9Bs).
 
-## What works today (phase 1)
+## What works today (phases 1 and 2)
 
 - Brompton Tessera processors over their HTTP IP control API (checked against Tessera 3.5.2): temperatures, fans,
   inputs and signal, genlock source, brightness, preset, blackout and freeze, failover role and partner, cable loops,
@@ -15,6 +15,13 @@ Design: [LED Processor Monitor: Design](https://claude.ai/artifact/Tk6LkG374Yuy8
 - Health rules and alerts: unreachable, no signal on the active input, temperatures, fans, tiles offline or erroring,
   tile firmware mismatch, cable loop broken, partner missing, failover active.
 - Overview page with live updates and an event log (kept in `events.jsonl` in the settings folder).
+- Topology page laid out like the wall diagram: primary processor on top, backup at the bottom, distribution boxes
+  as columns, tile chains between each pair of boxes. It shows which processor is driving, trunk state from each
+  processor, and each chain's cable loop (a broken loop turns its redundant end red). Click anything for details.
+  Brompton walls come from a layout in `config.json` (below), since Tessera does not report where tiles are.
+- Events page: the whole log, filtered by processor, level, source, time and text, with a CSV download.
+- Processor syslog: point Tessera's syslog at this machine (UDP 5514) and every line lands in the event log under
+  the processor that sent it. This is how Tessera reports things its API does not, such as genlock loss.
 - The Mac menu bar app.
 - A simulator for two SX40s (a primary and its backup) with faults you can switch on.
 
@@ -55,6 +62,40 @@ the app (or `data/` when running headless), edit `config.json`, and choose **Res
 
 `kind` is `brompton`, `coex` or `vxpro`. `name` is optional (the processor's own name is used). Alert limits can be
 changed under `"thresholds"`: `tempWarnC`, `tempCritC`, `fanMinRpm`, `tilesOfflineCritPercent`, `unreachableAfterPolls`.
+`"syslogPort"` (default 5514, 0 for off) is where processors send syslog.
+
+### Describe a Brompton wall
+
+Tessera does not report where its tiles are, so each Brompton wall is described once. Give each processor an `id`,
+then add a wall naming the primary and backup, and for each pair of XD boxes the number of tiles on each port's chain
+(port 1 first, 0 for an empty port). A chain runs from port N on the left box to port N on the right box, as a
+cable loop:
+
+```json
+"processors": [
+  { "id": "main", "name": "Stage Main", "kind": "brompton", "host": "10.10.20.11" },
+  { "id": "backup", "name": "Stage Backup", "kind": "brompton", "host": "10.10.20.12" }
+],
+"walls": [
+  {
+    "name": "Main stage wall",
+    "primary": "main",
+    "backup": "backup",
+    "groups": [
+      { "left": { "name": "XD A", "trunk": "A" }, "right": { "name": "XD B", "trunk": "B" }, "chains": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8] },
+      { "left": { "name": "XD C", "trunk": "C" }, "right": { "name": "XD D", "trunk": "D" }, "chains": [8, 8, 8, 8, 8, 8, 8, 8, 0, 0] }
+    ]
+  }
+]
+```
+
+`trunk` is the processor output feeding the box. Ports are named from it (A1, B1...) and matched to Tessera's cable
+loop reports, which read like `loop-found: A1->B1`. Add a box's `serial` to check that the processor can see it.
+Leave out `right` for chains that are not looped. The wall is checked against the processor's tile count, and a note
+appears if they differ.
+
+Not yet checked on real hardware: the exact port names Tessera uses in loop reports for XD-fed walls, and which
+syslog lines it sends. Both are read loosely, and the simulator follows the format above.
 
 ## Try faults with the simulator
 
@@ -65,6 +106,10 @@ curl 'http://127.0.0.1:<port>/sim/scenario?set=signal-loss'
 ```
 
 Scenarios: `normal`, `signal-loss`, `fan-failure`, `hot`, `tiles-offline`, `loop-broken`, `partner-lost`, `failover`.
+Demo mode also draws a simulated wall: two pairs of XD boxes with ten chains of eight tiles each. `loop-broken` breaks
+the loop on A4 to B4.
+
+To try syslog: `logger -n 127.0.0.1 -P 5514 -d "Genlock lost"` (macOS and Linux).
 
 ## Develop
 

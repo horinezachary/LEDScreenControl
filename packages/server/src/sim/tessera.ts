@@ -7,6 +7,7 @@
 // /sim/ exists only on the simulator; a real processor has nothing there.
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import type { WallLayout } from '@ledmon/shared';
 
 export const SCENARIOS = ['normal', 'signal-loss', 'fan-failure', 'hot', 'tiles-offline', 'loop-broken', 'partner-lost', 'failover'] as const;
 export type Scenario = (typeof SCENARIOS)[number];
@@ -62,13 +63,17 @@ export class TesseraSimulator {
     res.writeHead(404).end();
   }
 
+  private loops(): Record<string, { state: string }> {
+    return demoLoopStates(this.scenario === 'loop-broken');
+  }
+
   /** The /api/ tree for the current scenario. */
   tree(): unknown {
     const o = this.options;
     const s = this.scenario;
     const jitter = (base: number, spread: number) => Math.round((base + (this.rand() - 0.5) * spread) * 10) / 10;
     const hot = s === 'hot' ? 22 : 0;
-    const tiles = o.tiles ?? 640;
+    const tiles = o.tiles ?? DEMO_TILES;
     const offline = s === 'tiles-offline' ? Math.round(tiles * 0.08) : 0;
     const signal = s !== 'signal-loss';
     const failedOver = s === 'failover';
@@ -131,25 +136,35 @@ export class TesseraSimulator {
                 'partner-absence-duration': partnerLost ? Math.round((Date.now() - this.started) / 1000) : 0,
               },
             },
-            'cable-redundancy': {
-              loops: {
-                '0': { state: s === 'loop-broken' ? 'no-loop-found: No connection' : 'loop-found: A1->B1' },
-                '1': { state: 'loop-found: C1->D1' },
-                '2': { state: 'no-loop-found: No connection' },
-                '3': { state: 'no-loop-found: No connection' },
-              },
-            },
+            'cable-redundancy': { loops: this.loops() },
           },
         },
         override: { blackout: { enabled: false }, freeze: { enabled: false } },
         presets: { active: { number: 1, name: 'Show Config' } },
         devices: {
           statistics: { 'associated-count': tiles, 'online-count': tiles - offline, 'error-count': 0 },
-          items: { [`${o.serial}-XD-A`]: { firmware: '3.5.2', type: 'XD' }, [`${o.serial}-T1`]: { firmware: '3.5.2', type: 'RM1.5' } },
+          items: {
+            ...Object.fromEntries(['A', 'B', 'C', 'D'].map((x) => [`XD-${x}-DEMO`, { firmware: '3.5.2', type: 'XD', online: true }])),
+            [`${o.serial}-T1`]: { firmware: '3.5.2', type: 'RM1.5' },
+          },
         },
       },
     };
   }
+}
+
+/** Loop states: chains between XD A and B, and between C and D, one per port, as on the demo wall. */
+function demoLoopStates(broken: boolean): Record<string, { state: string }> {
+  const out: Record<string, { state: string }> = {};
+  let i = 0;
+  for (const [a, b] of [['A', 'B'], ['C', 'D']]) {
+    for (let port = 1; port <= 10; port++) {
+      // The loop-broken scenario breaks the chain on A4 to B4.
+      const lost = broken && a === 'A' && port === 4;
+      out[String(i++)] = { state: lost ? 'no-loop-found: No connection' : `loop-found: ${a}${port}->${b}${port}` };
+    }
+  }
+  return out;
 }
 
 /** A small seeded random number generator, so tests can repeat the drift. */
@@ -161,6 +176,25 @@ function mulberry32(seed: number): () => number {
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** The demo wall: 2 pairs of XD boxes, 10 chains of 8 tiles between each pair. */
+export const DEMO_CHAINS = Array.from({ length: 10 }, () => 8);
+export const DEMO_TILES = DEMO_CHAINS.reduce((a, b) => a + b, 0) * 2;
+
+export function demoWall(primaryId: string, backupId: string): WallLayout {
+  // The same XD boxes are seen by both processors, as on a real redundant wall.
+  const box = (x: string) => ({ name: `XD ${x}`, trunk: x, ports: 10, serial: `XD-${x}-DEMO` });
+  return {
+    id: 'demo-wall',
+    name: 'Main stage wall (simulated)',
+    primary: primaryId,
+    backup: backupId,
+    groups: [
+      { left: box('A'), right: box('B'), chains: DEMO_CHAINS },
+      { left: box('C'), right: box('D'), chains: DEMO_CHAINS },
+    ],
   };
 }
 

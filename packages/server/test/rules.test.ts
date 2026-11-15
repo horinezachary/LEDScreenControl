@@ -62,14 +62,14 @@ describe('evaluate', () => {
 
 describe('loopAlerts', () => {
   it('only reports a loop that was found before and is now lost', () => {
-    const seen = new Set<number>();
+    const seen = new Map<number, string>();
     expect(loopAlerts(snapshot(), seen)).toEqual([]);
-    expect([...seen]).toEqual([0, 1]);
+    expect(seen.size).toBe(20);
     const broken = loopAlerts(snapshot('loop-broken'), seen);
-    expect(broken.map((a) => a.key)).toEqual(['loop:0']);
+    expect(broken.map((a) => [a.key, a.message])).toEqual([['loop:3', 'Cable loop A4 to B4 broken (no-loop-found: No connection)']]);
   });
 
   it('does not report loops that were never cabled', () => {
-    expect(loopAlerts(snapshot('loop-broken'), new Set())).toEqual([]);
+    expect(loopAlerts(snapshot('loop-broken'), new Map())).toEqual([]);
   });
 });

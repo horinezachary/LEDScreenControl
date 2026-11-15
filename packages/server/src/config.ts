@@ -1,8 +1,8 @@
-// The app's settings, kept as one JSON file in the data folder. Phase 1 edits it by hand (the launcher's
-// "Open settings folder"); the settings page comes in a later phase.
+// The app's settings, kept as one JSON file in the data folder, edited by hand (the launcher's "Open settings folder")
+// or from the settings page.
 import fs from 'node:fs';
 import path from 'node:path';
-import type { ProcessorConfig, ProcessorKind } from '@ledmon/shared';
+import type { BoxLayout, GroupLayout, ProcessorConfig, ProcessorKind, WallLayout } from '@ledmon/shared';
 
 export interface Thresholds {
   /** Any processor temperature at or above this is a warning, in °C. */
@@ -25,6 +25,10 @@ export interface Config {
   requestTimeoutMs: number;
   processors: ProcessorConfig[];
   thresholds: Thresholds;
+  /** Brompton walls: which processors feed them and how the distribution boxes and chains are cabled. */
+  walls: WallLayout[];
+  /** UDP port for processors' syslog messages (point Tessera's syslog here). 0 turns it off. */
+  syslogPort: number;
 }
 
 export const DEFAULT_THRESHOLDS: Thresholds = {
@@ -41,6 +45,8 @@ export const DEFAULT_CONFIG: Config = {
   requestTimeoutMs: 3000,
   processors: [],
   thresholds: DEFAULT_THRESHOLDS,
+  walls: [],
+  syslogPort: 5514,
 };
 
 const KINDS: ProcessorKind[] = ['brompton', 'coex', 'vxpro'];
@@ -55,7 +61,7 @@ export function parseConfig(raw: unknown): Config {
   const obj = raw as Record<string, unknown>;
   const config: Config = {
     ...DEFAULT_CONFIG,
-    ...pickNumbers(obj, ['port', 'pollIntervalMs', 'requestTimeoutMs']),
+    ...pickNumbers(obj, ['port', 'pollIntervalMs', 'requestTimeoutMs', 'syslogPort']),
     thresholds: {
       ...DEFAULT_THRESHOLDS,
       ...(typeof obj.thresholds === 'object' && obj.thresholds !== null
@@ -63,6 +69,7 @@ export function parseConfig(raw: unknown): Config {
         : {}),
     },
     processors: [],
+    walls: [],
   };
   if (config.pollIntervalMs < 1000) throw new ConfigError('pollIntervalMs must be at least 1000.');
 
@@ -88,7 +95,58 @@ export function parseConfig(raw: unknown): Config {
       port: typeof port === 'number' ? port : undefined,
     });
   });
+  config.walls = parseWalls(obj.walls, ids);
   return config;
+}
+
+function parseWalls(raw: unknown, processorIds: Set<string>): WallLayout[] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) throw new ConfigError('"walls" must be a list.');
+  const ids = new Set<string>();
+  return raw.map((w, i) => {
+    const where = `walls[${i}]`;
+    if (typeof w !== 'object' || w === null) throw new ConfigError(`${where} must be an object.`);
+    const o = w as Record<string, unknown>;
+    const name = typeof o.name === 'string' && o.name.trim() ? o.name.trim() : `Wall ${i + 1}`;
+    const id = typeof o.id === 'string' && o.id.trim() ? o.id.trim() : slug(name);
+    if (ids.has(id)) throw new ConfigError(`Two walls share the id "${id}".`);
+    ids.add(id);
+    if (typeof o.primary !== 'string' || !processorIds.has(o.primary)) {
+      throw new ConfigError(`${where}.primary must be the id of a processor in "processors".`);
+    }
+    if (o.backup !== undefined && (typeof o.backup !== 'string' || !processorIds.has(o.backup))) {
+      throw new ConfigError(`${where}.backup must be the id of a processor in "processors".`);
+    }
+    if (!Array.isArray(o.groups)) throw new ConfigError(`${where}.groups must be a list.`);
+    const groups = o.groups.map((g, j) => parseGroup(g, `${where}.groups[${j}]`));
+    return { id, name, primary: o.primary, backup: o.backup as string | undefined, groups };
+  });
+}
+
+function parseGroup(raw: unknown, where: string): GroupLayout {
+  if (typeof raw !== 'object' || raw === null) throw new ConfigError(`${where} must be an object.`);
+  const o = raw as Record<string, unknown>;
+  const left = parseBox(o.left, `${where}.left`);
+  const right = o.right === undefined ? undefined : parseBox(o.right, `${where}.right`);
+  if (!Array.isArray(o.chains) || !o.chains.every((n) => Number.isInteger(n) && (n as number) >= 0)) {
+    throw new ConfigError(`${where}.chains must be a list of tile counts, one per port (0 for an empty port).`);
+  }
+  const ports = Math.min(left.ports ?? 10, right?.ports ?? Infinity);
+  if (o.chains.length > ports) throw new ConfigError(`${where}.chains lists ${o.chains.length} ports but the box has ${ports}.`);
+  return { left, right, chains: o.chains as number[] };
+}
+
+function parseBox(raw: unknown, where: string): BoxLayout {
+  if (typeof raw !== 'object' || raw === null) throw new ConfigError(`${where} must be an object with a "name".`);
+  const o = raw as Record<string, unknown>;
+  if (typeof o.name !== 'string' || !o.name.trim()) throw new ConfigError(`${where} needs a "name".`);
+  if (o.ports !== undefined && (!Number.isInteger(o.ports) || (o.ports as number) < 1)) throw new ConfigError(`${where}.ports must be a whole number.`);
+  return {
+    name: o.name.trim(),
+    trunk: typeof o.trunk === 'string' && o.trunk.trim() ? o.trunk.trim().toUpperCase() : undefined,
+    ports: (o.ports as number | undefined) ?? 10,
+    serial: typeof o.serial === 'string' && o.serial.trim() ? o.serial.trim() : undefined,
+  };
 }
 
 function pickNumbers(obj: Record<string, unknown>, keys: string[]): Record<string, number> {
@@ -119,7 +177,7 @@ export function loadConfig(dataDir: string): Config {
       ...DEFAULT_CONFIG,
       processors: [] as ProcessorConfig[],
       _help:
-        'Add one entry per processor to "processors", e.g. {"name": "Stage Main", "kind": "brompton", "host": "10.10.20.11"}. kind is brompton, coex or vxpro. Restart the server after editing.',
+        'Add one entry per processor to "processors", e.g. {"name": "Stage Main", "kind": "brompton", "host": "10.10.20.11"}. kind is brompton, coex or vxpro. Describe Brompton walls under "walls" (see the README). Restart the server after editing.',
     };
     fs.writeFileSync(file, JSON.stringify(starter, null, 2) + '\n');
   }

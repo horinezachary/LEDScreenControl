@@ -5,6 +5,7 @@
 // driver sends none. The tree's shape is documented by the processor itself at /api/?help=1.
 import type {
   CableLoop,
+  DeviceInfo,
   FailoverStatus,
   FanStatus,
   InputStatus,
@@ -61,7 +62,24 @@ export function parseTessera(body: unknown): PolledData {
     failover: parseFailover(obj(network.failover)),
     loops: parseLoops(obj(obj(network['cable-redundancy']).loops)),
     tiles: parseTiles(obj(api.devices)),
+    devices: parseBoxes(obj(api.devices)),
   };
+}
+
+function isBox(type: string | undefined): boolean {
+  return !!type && /^(XD|DX|TD)/i.test(type);
+}
+
+/** Distribution boxes only (XD and the like); tiles are counted in parseTiles, not listed, to keep the state small. */
+function parseBoxes(devices: Tree): DeviceInfo[] | undefined {
+  const out: DeviceInfo[] = [];
+  for (const [id, d] of entries(devices.items)) {
+    const type = str(obj(d).type);
+    if (!type || !isBox(type)) continue;
+    const online = bool(obj(d).online);
+    out.push({ id, type, firmware: str(obj(d).firmware), online });
+  }
+  return out.length ? out : undefined;
 }
 
 const MODEL_NAMES: Record<string, string> = { sx40: 'Tessera SX40', s8: 'Tessera S8', m2: 'Tessera M2', t1: 'Tessera T1' };
@@ -186,6 +204,8 @@ function parseTiles(devices: Tree): TileSummary | undefined {
   if (num(stats['associated-count']) === undefined) return undefined;
   const firmware: Record<string, number> = {};
   for (const [, d] of entries(devices.items)) {
+    // Distribution boxes run their own firmware line, so they are left out of the tile firmware check.
+    if (isBox(str(obj(d).type))) continue;
     const fw = str(obj(d).firmware);
     if (fw && fw !== 'unknown') firmware[fw] = (firmware[fw] ?? 0) + 1;
   }

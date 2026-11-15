@@ -6,6 +6,7 @@ import path from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { ServerMessage } from '@ledmon/shared';
 import type { Monitor } from './monitor.js';
+import { eventsCsv, type EventFilter } from './events.js';
 
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -40,6 +41,26 @@ export function createHttpServer(monitor: Monitor, webRoot?: string): http.Serve
       res.end(JSON.stringify(monitor.state()));
       return;
     }
+    if (url.pathname === '/api/events' || url.pathname === '/api/events.csv') {
+      const events = monitor.events.search(eventFilter(url.searchParams));
+      if (url.pathname.endsWith('.csv')) {
+        const stamp = new Date().toISOString().slice(0, 10);
+        res.writeHead(200, {
+          'content-type': 'text/csv; charset=utf-8',
+          'content-disposition': `attachment; filename="led-monitor-events-${stamp}.csv"`,
+          'cache-control': 'no-store',
+        });
+        res.end(eventsCsv(events));
+      } else {
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+        res.end(JSON.stringify(events));
+      }
+      return;
+    }
+    if (url.pathname.startsWith('/api/')) {
+      res.writeHead(404, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'Not found' }));
+      return;
+    }
     if (!root) {
       res.writeHead(200, { 'content-type': TYPES['.html'] }).end(FALLBACK_PAGE);
       return;
@@ -69,6 +90,23 @@ export function createHttpServer(monitor: Monitor, webRoot?: string): http.Serve
     wss.close();
   });
   return server;
+}
+
+function eventFilter(q: URLSearchParams): EventFilter {
+  const num = (k: string) => (q.get(k) && Number.isFinite(Number(q.get(k))) ? Number(q.get(k)) : undefined);
+  const levels = q.get('level')?.split(',').filter((l): l is NonNullable<EventFilter['levels']>[number] =>
+    ['info', 'ok', 'warning', 'critical'].includes(l),
+  );
+  const source = q.get('source');
+  return {
+    processorId: q.get('processor') || undefined,
+    levels: levels?.length ? levels : undefined,
+    source: source === 'monitor' || source === 'syslog' || source === 'control' ? source : undefined,
+    q: q.get('q') || undefined,
+    since: num('since'),
+    until: num('until'),
+    limit: num('limit'),
+  };
 }
 
 function serveStatic(root: string, pathname: string, res: http.ServerResponse): void {
