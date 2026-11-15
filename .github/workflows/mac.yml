@@ -1,19 +1,29 @@
 name: Mac app
-# Builds the launcher app on a Mac and keeps it as a download on the run for 14 days.
-# Runs on pull requests and main; the version inside comes from scripts/app-version.sh.
+# Builds the launcher app on a Mac.
+#
+# On a pull request (or a manual run) the .dmg is kept as a download on the run for 14 days. Auto release calls this
+# workflow with the release's tag after each release, and then the .dmg is built from that tag and attached to the
+# GitHub release. The version inside comes from scripts/app-version.sh, so a release build carries its own number.
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag (vX.Y.Z) to build and attach the app to.
+        type: string
+        required: true
 jobs:
   build:
     name: Build LED Monitor.app
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -33,3 +43,14 @@ jobs:
           name: LED Monitor (macOS)
           path: packages/launcher/release/*.dmg
           retention-days: 14
+      - name: Attach to the release
+        if: inputs.tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          dmg="$(ls -t packages/launcher/release/*.dmg | head -n1)"
+          # A stable name, so the release page reads "LED-Monitor-v1.2.3-mac.dmg" whatever electron-builder calls it.
+          named="packages/launcher/release/LED-Monitor-$TAG-mac.dmg"
+          [ "$dmg" = "$named" ] || cp "$dmg" "$named"
+          gh release upload "$TAG" "$named" --clobber --repo "$GITHUB_REPOSITORY"

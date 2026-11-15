@@ -16,7 +16,8 @@ notes generated from the PRs since the last tag. The bump comes from the PR titl
 (`.github/scripts/next-version.sh`): `feat:` minor, `!:` or `BREAKING CHANGE` major, anything else patch; `[skip release]`
 in the PR title skips it. Nothing is committed back and no file holds the version (package.json stays `0.1.0`): the tag
 is the version. Builds read it with `scripts/app-version.sh` (the tag on the commit, or the number auto-release will give,
-with `-dev` off main). The first release counts from 0.0.0.
+with `-dev` off main). The first release counts from 0.0.0. After tagging, the same workflow attaches the Mac .dmg (via
+`mac.yml`) and a server tarball to the release; run it by hand with a tag to rebuild the downloads for an existing release.
 
 ## Real processors
 
