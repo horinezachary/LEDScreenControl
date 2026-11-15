@@ -1,7 +1,8 @@
 import type { DashboardState, ProcessorView } from '@ledmon/shared';
 import { ago, duration, rate, SEVERITY_LABEL } from '../format';
+import { linkHandler, processorPath } from '../route';
 
-export function Overview({ state, now }: { state: DashboardState; now: number }) {
+export function Overview({ state, now, go }: { state: DashboardState; now: number; go: (path: string) => void }) {
   return state.processors.length === 0 ? (
     <div className="card empty-card">
       <h2>No processors yet</h2>
@@ -13,13 +14,13 @@ export function Overview({ state, now }: { state: DashboardState; now: number })
   ) : (
     <>
       {state.processors.map((p) => (
-        <ProcessorCard key={p.id} p={p} now={now} />
+        <ProcessorCard key={p.id} p={p} now={now} go={go} />
       ))}
     </>
   );
 }
 
-function ProcessorCard({ p, now }: { p: ProcessorView; now: number }) {
+function ProcessorCard({ p, now, go }: { p: ProcessorView; now: number; go: (path: string) => void }) {
   const active = p.inputs.find((i) => i.active);
   const hottest = [...p.temperatures].sort((a, b) => b.value - a.value)[0];
   const fansOk = p.fans.filter((f) => f.running).length;
@@ -29,7 +30,11 @@ function ProcessorCard({ p, now }: { p: ProcessorView; now: number }) {
     <article className={`card proc sev-border-${p.severity}`} aria-label={p.name}>
       <div className="proc-head">
         <div>
-          <h2>{p.name}</h2>
+          <h2>
+            <a href={processorPath(p.id)} onClick={linkHandler(go, processorPath(p.id))}>
+              {p.name}
+            </a>
+          </h2>
           <div className="sub">
             {p.model ?? kindName(p.kind)} · <span className="mono">{p.host}</span>
             {p.serial && <> · SN {p.serial}</>}
@@ -47,6 +52,8 @@ function ProcessorCard({ p, now }: { p: ProcessorView; now: number }) {
           {stale && <> Last answer {ago(p.lastSeen, now)}. Readings below are from then.</>}
         </p>
       )}
+
+      {p.reachable && p.note && <p className="note">{p.note}</p>}
 
       {p.alerts.length > 0 && (
         <ul className="alerts">
@@ -89,7 +96,7 @@ function ProcessorCard({ p, now }: { p: ProcessorView; now: number }) {
             )}
           </Fact>
           <Fact label="Redundancy">{failoverText(p)}</Fact>
-          <Fact label="Brightness">{p.brightness !== undefined ? `${p.brightness} nits` : '—'}</Fact>
+          <Fact label="Brightness">{p.brightness !== undefined ? (p.brightnessUnit === '%' ? `${Math.round(p.brightness)}%` : `${p.brightness} nits`) : '—'}</Fact>
           <Fact label="Preset">{p.preset ? `${p.preset.number} · ${p.preset.name}` : '—'}</Fact>
           <Fact label="Firmware">{p.firmware ?? '—'}</Fact>
           <Fact label="Uptime">{duration(p.uptimeSeconds)}</Fact>
@@ -148,8 +155,8 @@ function ProcessorCard({ p, now }: { p: ProcessorView; now: number }) {
                 <caption>Cable loops</caption>
                 <tbody>
                   {p.loops.map((l) => (
-                    <tr key={l.index}>
-                      <th scope="row">Loop {l.index + 1}</th>
+                    <tr key={l.key}>
+                      <th scope="row">{l.port ? `Chain ${l.port}` : `Loop ${l.index}`}</th>
                       <td className="mono">{l.state}</td>
                     </tr>
                   ))}
@@ -184,6 +191,6 @@ function failoverText(p: ProcessorView): React.ReactNode {
 }
 
 export function kindName(kind: ProcessorView['kind']): string {
-  return { brompton: 'Brompton', coex: 'NovaStar COEX', vxpro: 'NovaStar VX Pro' }[kind];
+  return { brompton: 'Brompton', coex: 'NovaStar COEX', vxpro: 'NovaStar VX Pro', device: 'Network device' }[kind];
 }
 

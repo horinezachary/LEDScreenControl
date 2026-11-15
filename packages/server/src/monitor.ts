@@ -1,23 +1,30 @@
 // Polls every processor on its own timer, keeps the latest snapshot and alerts for each, and logs every change of
 // state as an event. Listeners are told after each poll so the web layer can push the new state.
 import { EventEmitter } from 'node:events';
-import type { Alert, DashboardState, ProcessorConfig, ProcessorSnapshot, ProcessorView, WallLayout, WallView } from '@ledmon/shared';
+import type { Alert, ControlRequest, DashboardState, ProcessorConfig, ProcessorSnapshot, ProcessorView, WallLayout, WallView } from '@ledmon/shared';
 import { worstSeverity } from '@ledmon/shared';
 import type { Config } from './config.js';
 import type { Driver } from './drivers/types.js';
 import { bromptonDriver } from './drivers/brompton.js';
+import { vxproDriver } from './drivers/vxpro.js';
+import { coexDriver } from './drivers/coex.js';
+import { deviceDriver } from './drivers/device.js';
 import { EventLog } from './events.js';
+import { History } from './history.js';
+import type { AlertChange } from './alerter.js';
 import { evaluate, loopAlerts } from './rules.js';
 import { Topology } from './topology.js';
 import { APP_VERSION } from './version.js';
 
-const PHASE_NOTE: Record<string, string> = {
-  coex: 'NovaStar COEX support is not built yet (planned for phase 3).',
-  vxpro: 'NovaStar VX Pro support is not built yet (planned for phase 5).',
-};
+const PHASE_NOTE: Record<string, string> = {};
 
-export function driverFor(p: ProcessorConfig): Driver | undefined {
+
+/** dataDir keeps what a driver must remember across restarts (COEX error count resets). */
+export function driverFor(p: ProcessorConfig, dataDir?: string): Driver | undefined {
   if (p.kind === 'brompton') return bromptonDriver(p);
+  if (p.kind === 'coex') return coexDriver(p, { dataDir });
+  if (p.kind === 'vxpro') return vxproDriver(p, { dataDir });
+  if (p.kind === 'device') return deviceDriver(p);
   return undefined;
 }
 
@@ -25,28 +32,85 @@ interface Entry {
   config: ProcessorConfig;
   driver?: Driver;
   view: ProcessorView;
-  loopsSeen: Map<number, string>;
+  loopsSeen: Map<string, string>;
   timer?: NodeJS.Timeout;
   inFlight?: AbortController;
+  /** Added in code (the demo simulators) rather than from the settings, so a settings change leaves it alone. */
+  extra: boolean;
+  removed?: boolean;
+}
+
+export class ControlError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
 }
 
 export class Monitor extends EventEmitter {
   readonly events: EventLog;
+  readonly history: History;
   readonly startedAt = Date.now();
   private entries = new Map<string, Entry>();
-  private walls: WallLayout[];
+  private extraWalls: WallLayout[] = [];
   private topology = new Topology();
-  private stopped = false;
+  private stopped = true;
 
-  constructor(private config: Config, dataDir?: string, driverFactory: (p: ProcessorConfig) => Driver | undefined = driverFor) {
+  constructor(
+    private config: Config,
+    dataDir?: string,
+    private driverFactory: (p: ProcessorConfig) => Driver | undefined = (p) => driverFor(p, dataDir),
+  ) {
     super();
     this.events = new EventLog(dataDir);
-    this.walls = [...config.walls];
-    for (const p of config.processors) this.add(p, driverFactory(p));
+    this.history = new History(dataDir);
+    for (const p of config.processors) this.add(p, driverFactory(p), false);
   }
 
-  /** Adds a processor and starts polling it. */
-  add(p: ProcessorConfig, driver: Driver | undefined = driverFor(p)): void {
+  get settings(): Config {
+    return this.config;
+  }
+
+  private get walls(): WallLayout[] {
+    return [...this.config.walls, ...this.extraWalls];
+  }
+
+  /**
+   * Applies new settings without a restart: processors that are gone stop being polled, new and changed ones start,
+   * and thresholds, walls and the controls switch apply from the next poll. Demo processors stay.
+   */
+  reconfigure(config: Config): void {
+    this.config = config;
+    const wanted = new Map(config.processors.map((p) => [p.id, p]));
+    for (const [id, e] of this.entries) {
+      if (e.extra) continue;
+      const next = wanted.get(id);
+      if (!next || JSON.stringify(next) !== JSON.stringify(e.config)) {
+        this.drop(e);
+        if (!next) this.history.forget(id);
+      }
+    }
+    for (const p of config.processors) {
+      if (this.entries.has(p.id)) continue;
+      this.add(p, this.driverFactory(p), false);
+      const e = this.entries.get(p.id)!;
+      if (!this.stopped && e.driver) e.timer = setTimeout(() => void this.pollLoop(e), 0);
+    }
+    for (const e of this.entries.values()) e.view = { ...e.view, controls: this.config.controls ? e.driver?.capabilities : undefined };
+    this.emit('change');
+  }
+
+  private drop(e: Entry): void {
+    e.removed = true;
+    clearTimeout(e.timer);
+    e.inFlight?.abort();
+    this.entries.delete(e.config.id);
+  }
+
+  /** Adds a processor (polled from the next start, or at once when already running). */
+  add(p: ProcessorConfig, driver: Driver | undefined = driverFor(p), extra = true): void {
     if (this.entries.has(p.id)) throw new Error(`A processor with id "${p.id}" is already monitored.`);
     const view: ProcessorView = {
       id: p.id,
@@ -61,14 +125,53 @@ export class Monitor extends EventEmitter {
       loops: [],
       severity: 'unknown',
       alerts: [],
-      lastError: driver ? undefined : PHASE_NOTE[p.kind],
+      lastError: driver ? undefined : (PHASE_NOTE[p.kind] ?? `No driver for ${p.kind} processors.`),
+      controls: this.config.controls ? driver?.capabilities : undefined,
     };
-    this.entries.set(p.id, { config: p, driver, view, loopsSeen: new Map() });
+    const entry: Entry = { config: p, driver, view, loopsSeen: new Map(), extra };
+    this.entries.set(p.id, entry);
+    if (extra && !this.stopped && driver) entry.timer = setTimeout(() => void this.pollLoop(entry), 0);
   }
 
-  /** Adds a wall layout, e.g. the demo wall for the simulated pair. */
+  /** Adds a wall layout that is not in the settings, e.g. the demo wall for the simulated pair. */
   addWall(layout: WallLayout): void {
-    this.walls.push(layout);
+    this.extraWalls.push(layout);
+  }
+
+  /**
+   * Sends one control command to a processor, logs it with who asked, then polls the processor so every screen
+   * shows the result. Throws ControlError with a message for the person who pressed the button.
+   */
+  async control(id: string, req: ControlRequest, who: string): Promise<ProcessorView> {
+    const entry = this.entries.get(id);
+    if (!entry) throw new ControlError('No such processor.', 404);
+    if (!this.config.controls) throw new ControlError('Controls are turned off in the settings.', 403);
+    const caps = entry.driver?.capabilities;
+    if (!entry.driver?.control || !caps || !caps[req.action]) throw new ControlError(`${entry.view.name} does not take "${req.action}" from this dashboard.`, 400);
+    if (req.action === 'brightness' && caps.brightness) {
+      const { min, max } = caps.brightness;
+      if (!Number.isFinite(req.value) || req.value < min || req.value > max) throw new ControlError(`Brightness must be from ${min} to ${max}.`, 400);
+    }
+    if (req.action === 'input' && !entry.view.inputs.some((i) => i.key === req.value)) throw new ControlError('That input is not on this processor.', 400);
+    if (req.action === 'preset' && entry.view.presets && !entry.view.presets.some((p) => p.number === req.value)) {
+      throw new ControlError('That preset is not on this processor.', 400);
+    }
+    const what = describe(req, entry.view);
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), this.config.requestTimeoutMs);
+    try {
+      await entry.driver.control(req, ctrl.signal);
+    } catch (err) {
+      const msg = ctrl.signal.aborted ? `no answer within ${this.config.requestTimeoutMs / 1000} s` : (err as Error).message;
+      this.events.add({ processorId: id, level: 'warning', source: 'control', message: `${entry.view.name}: ${what} failed (${msg}), asked from ${who}` });
+      this.emit('change', entry.view);
+      throw new ControlError(`${entry.view.name} did not accept it: ${msg}`, 502);
+    } finally {
+      clearTimeout(timeout);
+    }
+    this.events.add({ processorId: id, level: 'info', source: 'control', message: `${entry.view.name}: ${what}, from ${who}` });
+    await this.poll(entry);
+    return entry.view;
   }
 
   start(): void {
@@ -88,6 +191,7 @@ export class Monitor extends EventEmitter {
       clearTimeout(e.timer);
       e.inFlight?.abort();
     }
+    this.history.close();
   }
 
   state(): DashboardState {
@@ -99,6 +203,12 @@ export class Monitor extends EventEmitter {
       processors,
       walls: this.wallViews(),
       events: this.events.recent(100),
+      limits: {
+        tempWarnC: this.config.thresholds.tempWarnC,
+        tempCritC: this.config.thresholds.tempCritC,
+        portLoadWarnPercent: this.config.thresholds.portLoadWarnPercent,
+      },
+      controls: this.config.controls,
     };
   }
 
@@ -130,9 +240,10 @@ export class Monitor extends EventEmitter {
   }
 
   private async pollLoop(entry: Entry): Promise<void> {
-    if (this.stopped) return;
+    if (this.stopped || entry.removed) return;
     await this.poll(entry);
-    if (this.stopped) return;
+    if (this.stopped || entry.removed) return;
+    clearTimeout(entry.timer);
     entry.timer = setTimeout(() => void this.pollLoop(entry), this.config.pollIntervalMs);
   }
 
@@ -165,9 +276,11 @@ export class Monitor extends EventEmitter {
       entry.inFlight = undefined;
     }
 
+    if (entry.removed) return;
     const extra = loopAlerts(snap, entry.loopsSeen);
     const { alerts, severity } = evaluate(snap, this.config.thresholds, prev.alerts, Date.now(), extra);
-    entry.view = { ...snap, alerts, severity };
+    entry.view = { ...snap, alerts, severity, controls: this.config.controls ? entry.driver.capabilities : undefined };
+    this.history.record(entry.view);
     this.logChanges(entry.view, prev);
     this.emit('change', entry.view);
   }
@@ -185,10 +298,14 @@ export class Monitor extends EventEmitter {
       const old = was.get(a.key);
       if (!old || old.severity !== a.severity) {
         this.events.add({ processorId: now.id, level: a.severity, message: `${name}: ${a.message}` });
+        this.emit('alert', { processorId: now.id, processorName: name, alert: a, change: 'raised' } satisfies AlertChange);
       }
     }
     for (const a of before.alerts) {
-      if (!is.has(a.key)) this.events.add({ processorId: now.id, level: 'ok', message: `${name}: cleared, ${lowerFirst(a.message)}` });
+      if (!is.has(a.key)) {
+        this.events.add({ processorId: now.id, level: 'ok', message: `${name}: cleared, ${lowerFirst(a.message)}` });
+        this.emit('alert', { processorId: now.id, processorName: name, alert: a, change: 'cleared' } satisfies AlertChange);
+      }
     }
     if (now.reachable && before.reachable && now.preset && before.preset && now.preset.number !== before.preset.number) {
       this.events.add({ processorId: now.id, level: 'info', message: `${name}: preset ${now.preset.number} "${now.preset.name}" loaded` });
@@ -201,16 +318,46 @@ function stripView(v: ProcessorView): ProcessorSnapshot {
   return snap;
 }
 
+function describe(req: ControlRequest, p: ProcessorView): string {
+  switch (req.action) {
+    case 'brightness':
+      return `brightness set to ${req.value}${(p.controls?.brightness?.unit ?? p.brightnessUnit) === '%' ? '%' : ' nits'}`;
+    case 'blackout':
+      return req.value ? 'blackout on' : 'blackout off';
+    case 'freeze':
+      return req.value ? 'freeze on' : 'freeze off';
+    case 'preset': {
+      const name = p.presets?.find((x) => x.number === req.value)?.name;
+      return `preset ${req.value}${name ? ` "${name}"` : ''} loaded`;
+    }
+    case 'input':
+      return `input switched to ${p.inputs.find((i) => i.key === req.value)?.label ?? req.value}`;
+    case 'failover':
+      return 'failover requested';
+    case 'reboot':
+      return 'reboot requested';
+    case 'resetErrors':
+      return 'receiving card error counts reset on the dashboard';
+  }
+}
+
 function lowerFirst(s: string): string {
   return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
 function errorText(err: unknown): string {
   if (err instanceof Error) {
-    const cause = (err as Error & { cause?: { code?: string; message?: string } }).cause;
-    if (cause?.code === 'ECONNREFUSED') return 'connection refused (is IP control enabled?)';
-    if (cause?.code === 'EHOSTUNREACH' || cause?.code === 'ENETUNREACH') return 'host unreachable';
-    if (cause?.code) return `${cause.code}`;
+    // fetch puts the socket error under cause; a raw socket (VX Pro) puts it on the error itself.
+    const code = (err as Error & { cause?: { code?: string } }).cause?.code ?? (err as NodeJS.ErrnoException).code;
+    if (code === 'ECONNREFUSED') return 'connection refused (is IP control enabled?)';
+    if (code === 'EHOSTUNREACH' || code === 'ENETUNREACH') {
+      // macOS answers "host unreachable" for every address on the network when the app has not been allowed to use
+      // the local network, even though the processor is up.
+      return process.platform === 'darwin'
+        ? 'host unreachable (if it answers ping, allow LED Monitor in System Settings → Privacy & Security → Local Network, then restart it)'
+        : 'host unreachable';
+    }
+    if (code) return code;
     return err.message;
   }
   return String(err);

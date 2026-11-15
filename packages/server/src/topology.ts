@@ -18,11 +18,11 @@ import type {
 } from '@ledmon/shared';
 import { worstSeverity } from '@ledmon/shared';
 
-const LOOP_FOUND = /loop-found:\s*([A-Za-z]+\d+)\s*->\s*([A-Za-z]+\d+)/;
+const LOOP_FOUND = /^loop-found:\s*([A-Za-z]+\d+)\s*->\s*([A-Za-z]+\d+)/;
 
 export class Topology {
   /** Which loop index each chain was last seen under, per processor, so a lost loop can be pinned to its chain. */
-  private loopOf = new Map<string, number>();
+  private loopOf = new Map<string, string>();
 
   build(layouts: WallLayout[], processors: Map<string, ProcessorView>): WallView[] {
     const walls: WallView[] = [];
@@ -130,9 +130,9 @@ export class Topology {
   }
 
   /**
-   * Tessera lists its cable loops as "loop-found: A1->B1" when the loop is cabled and seen. When it breaks the text
-   * becomes e.g. "no-loop-found: No connection" and no longer names the ports, so the index it was found under is
-   * remembered to tell which chain broke.
+   * Tessera lists each chain's loop as "loop-found: A1->B1" when it is cabled and seen. When it breaks the text
+   * becomes "no-loop-found: A1->No connection", which no longer names the far end, so the loop's key is remembered
+   * to tell which chain broke. Ports that were never looped also read "no-loop-found" and are not called broken.
    */
   private loopState(p: ProcessorView, chainId: string, a: string, b: string): ChainView['loop'] {
     const memKey = `${p.id}|${chainId}`;
@@ -141,13 +141,13 @@ export class Topology {
       if (!m) continue;
       const [x, y] = [m[1].toUpperCase(), m[2].toUpperCase()];
       if ((x === a.toUpperCase() && y === b.toUpperCase()) || (x === b.toUpperCase() && y === a.toUpperCase())) {
-        this.loopOf.set(memKey, loop.index);
+        this.loopOf.set(memKey, loop.key);
         return 'ok';
       }
     }
-    const idx = this.loopOf.get(memKey);
-    if (idx !== undefined) {
-      const loop = p.loops.find((l) => l.index === idx);
+    const key = this.loopOf.get(memKey);
+    if (key !== undefined) {
+      const loop = p.loops.find((l) => l.key === key);
       if (loop && !loop.found) return 'broken';
     }
     return 'unknown';

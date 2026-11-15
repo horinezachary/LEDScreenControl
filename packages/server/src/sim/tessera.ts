@@ -23,11 +23,22 @@ export interface SimOptions {
   seed?: number;
 }
 
+const PRESETS = ['Show Config', 'Rehearsal', 'Walk-in', 'Test'];
+
 export class TesseraSimulator {
   scenario: Scenario = 'normal';
+  /** Every ?set= request received, as [path, value], for tests. The simulator applies the ones it knows. */
+  readonly writes: [string, string][] = [];
+  brightness = 1500;
+  blackout = false;
+  freeze = false;
+  preset = 1;
+  input = { type: 'sdi', number: 1 };
+  /** Set by a request-failover command; the scenario 'failover' also forces it on. */
+  failedOver = false;
   private server?: http.Server;
   private rand: () => number;
-  private readonly started = Date.now();
+  private started = Date.now();
 
   constructor(readonly options: SimOptions) {
     this.rand = mulberry32(options.seed ?? (Number(options.serial) || 1));
@@ -56,11 +67,53 @@ export class TesseraSimulator {
       }
       return;
     }
+    if (url.searchParams.has('set') && url.pathname.startsWith('/api/')) {
+      const path = url.pathname.slice('/api/'.length);
+      const value = url.searchParams.get('set') ?? '';
+      this.writes.push([path, value]);
+      if (!this.apply(path, value)) {
+        res.writeHead(404, { 'content-type': 'text/plain' }).end('unknown property\n');
+        return;
+      }
+      res.writeHead(200, { 'content-type': 'application/json' }).end('{}');
+      return;
+    }
     if (url.pathname === '/api/' || url.pathname === '/api') {
       res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(this.tree()));
       return;
     }
     res.writeHead(404).end();
+  }
+
+  private apply(path: string, value: string): boolean {
+    switch (path) {
+      case 'output/global-colour/brightness':
+        this.brightness = Number(value);
+        return true;
+      case 'override/blackout/enabled':
+        this.blackout = value === 'true';
+        return true;
+      case 'override/freeze/enabled':
+        this.freeze = value === 'true';
+        return true;
+      case 'presets/active/number':
+        this.preset = Number(value);
+        return true;
+      case 'input/active/source/port-type':
+        this.input = { ...this.input, type: value };
+        return true;
+      case 'input/active/source/port-number':
+        this.input = { ...this.input, number: Number(value) };
+        return true;
+      case 'output/network/failover/actions/request-failover':
+        this.failedOver = !this.failedOver;
+        return true;
+      case 'system/actions/reboot':
+        this.started = Date.now();
+        return true;
+      default:
+        return false;
+    }
   }
 
   private loops(): Record<string, { state: string }> {
@@ -76,7 +129,7 @@ export class TesseraSimulator {
     const tiles = o.tiles ?? DEMO_TILES;
     const offline = s === 'tiles-offline' ? Math.round(tiles * 0.08) : 0;
     const signal = s !== 'signal-loss';
-    const failedOver = s === 'failover';
+    const failedOver = s === 'failover' || this.failedOver;
     const partnerLost = s === 'partner-lost';
     const uptime = Math.round((Date.now() - this.started) / 1000) + 86400 * 3;
     const sdi = (w: number, h: number, r: number) => ({ 'meta-data': { resolution: { width: w, height: h }, 'refresh-rate': r } });
@@ -115,15 +168,16 @@ export class TesseraSimulator {
         },
         project: { name: 'Show Config' },
         input: {
-          active: { source: { 'port-type': 'sdi', 'port-number': 1 } },
+          active: { source: { 'port-type': this.input.type, 'port-number': this.input.number } },
           ports: {
-            sdi: { '1': signal ? sdi(3840, 2160, 59.94) : none, '2': none },
-            hdmi: { '1': none },
-            dvi: { '1': none },
+            // Listed from "0" while port-number counts from 1, as a real SX40 on 3.5.2 does.
+            sdi: { '0': signal ? sdi(3840, 2160, 59.94) : none, '1': sdi(1920, 1080, 59.94) },
+            hdmi: { '0': none },
+            dvi: { '0': none },
           },
         },
         output: {
-          'global-colour': { brightness: 1500 },
+          'global-colour': { brightness: this.brightness },
           network: {
             genlock: { source: 'input', 'internal-rate': 59.94 },
             failover: {
@@ -139,8 +193,11 @@ export class TesseraSimulator {
             'cable-redundancy': { loops: this.loops() },
           },
         },
-        override: { blackout: { enabled: false }, freeze: { enabled: false } },
-        presets: { active: { number: 1, name: 'Show Config' } },
+        override: { blackout: { enabled: this.blackout }, freeze: { enabled: this.freeze } },
+        presets: {
+          active: { number: this.preset, name: PRESETS[this.preset - 1] ?? `Preset ${this.preset}` },
+          items: Object.fromEntries(PRESETS.map((name, i) => [String(i + 1), { number: i + 1, name }])),
+        },
         devices: {
           statistics: { 'associated-count': tiles, 'online-count': tiles - offline, 'error-count': 0 },
           items: {
@@ -153,17 +210,21 @@ export class TesseraSimulator {
   }
 }
 
-/** Loop states: chains between XD A and B, and between C and D, one per port, as on the demo wall. */
+/**
+ * Loop states as a real SX40 on 3.5.2 reports them: one entry per pair of XD boxes, numbered from 1, listing every
+ * chain on it, e.g. "loop-found: A1->B1, loop-found: A2->B2". A lost loop reads "no-loop-found: A4->No connection".
+ */
 function demoLoopStates(broken: boolean): Record<string, { state: string }> {
   const out: Record<string, { state: string }> = {};
-  let i = 0;
-  for (const [a, b] of [['A', 'B'], ['C', 'D']]) {
+  [['A', 'B'], ['C', 'D']].forEach(([a, b], i) => {
+    const chains: string[] = [];
     for (let port = 1; port <= 10; port++) {
       // The loop-broken scenario breaks the chain on A4 to B4.
       const lost = broken && a === 'A' && port === 4;
-      out[String(i++)] = { state: lost ? 'no-loop-found: No connection' : `loop-found: ${a}${port}->${b}${port}` };
+      chains.push(lost ? `no-loop-found: ${a}${port}->No connection` : `loop-found: ${a}${port}->${b}${port}`);
     }
-  }
+    out[String(i + 1)] = { state: chains.join(', ') };
+  });
   return out;
 }
 

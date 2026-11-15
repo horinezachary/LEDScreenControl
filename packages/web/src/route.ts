@@ -2,31 +2,42 @@ import { useEffect, useState } from 'react';
 
 // Pages are real paths (/topology, /events...) so a link can be shared. The server answers every unknown path with
 // the dashboard, which then picks the page from the address.
-export type Page = 'overview' | 'topology' | 'events';
+export type Page = 'overview' | 'topology' | 'events' | 'settings' | 'processor';
 
-export const PAGES: { page: Page; path: string; label: string }[] = [
+export interface Route {
+  page: Page;
+  /** The processor id on /processors/:id. */
+  id?: string;
+}
+
+export const TABS: { page: Page; path: string; label: string }[] = [
   { page: 'overview', path: '/', label: 'Overview' },
   { page: 'topology', path: '/topology', label: 'Topology' },
   { page: 'events', path: '/events', label: 'Events' },
+  { page: 'settings', path: '/settings', label: 'Settings' },
 ];
 
-function pageOf(pathname: string): Page {
-  return PAGES.find((p) => p.path !== '/' && pathname.startsWith(p.path))?.page ?? 'overview';
+export function routeOf(pathname: string): Route {
+  const proc = /^\/processors\/([^/]+)/.exec(pathname);
+  if (proc) return { page: 'processor', id: decodeURIComponent(proc[1]) };
+  return { page: TABS.find((p) => p.path !== '/' && pathname.startsWith(p.path))?.page ?? 'overview' };
 }
 
-export function useRoute(): [Page, (path: string) => void] {
-  const [page, setPage] = useState<Page>(() => pageOf(location.pathname));
+export const processorPath = (id: string) => `/processors/${encodeURIComponent(id)}`;
+
+export function useRoute(): [Route, (path: string) => void] {
+  const [route, setRoute] = useState<Route>(() => routeOf(location.pathname));
   useEffect(() => {
-    const onPop = () => setPage(pageOf(location.pathname));
+    const onPop = () => setRoute(routeOf(location.pathname));
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
   const go = (path: string) => {
     if (path !== location.pathname + location.search) history.pushState(null, '', path);
-    setPage(pageOf(path));
+    setRoute(routeOf(path));
     window.scrollTo(0, 0);
   };
-  return [page, go];
+  return [route, go];
 }
 
 /** For <a> elements: a normal click navigates in place, a modified click (new tab) is left to the browser. */

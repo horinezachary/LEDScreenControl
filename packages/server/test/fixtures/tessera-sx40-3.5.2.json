@@ -1,0 +1,510 @@
+{
+ "api": {
+  "devices": {
+   "items": {
+    "017680": {
+     "firmware": "unknown",
+     "type": "XD"
+    },
+    "017692": {
+     "firmware": "unknown",
+     "type": "XD"
+    },
+    "019345": {
+     "firmware": "unknown",
+     "type": "XD"
+    },
+    "019346": {
+     "firmware": "unknown",
+     "type": "XD"
+    },
+    "tp260m000077": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000107": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000186": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000190": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000193": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000195": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000206": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000219": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000228": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000244": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000248": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000267": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000268": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000285": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000310": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000338": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000353": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000362": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000367": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000401": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000402": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000432": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000490": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000495": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000501": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000504": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000509": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000512": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000522": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000525": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000526": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000529": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000536": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000543": {
+     "firmware": "3.5.3 3.5.3 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000552": {
+     "firmware": "3.5.3 3.5.3 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000557": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000575": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000579": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000585": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000588": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000610": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000613": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000628": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000633": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000636": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000638": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000643": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000654": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000657": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000662": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000671": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000676": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000691": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000698": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000705": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000717": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000725": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000726": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000745": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000762": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000764": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000786": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000796": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000806": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000814": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000826": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000843": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000844": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000858": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000932": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000943": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000966": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000974": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000976": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000982": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m000997": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m001011": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m001052": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m001070": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m001072": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    },
+    "tp260m001076": {
+     "firmware": "3.5.1 3.5.1 r1",
+     "type": "TP2.6 V2"
+    }
+   },
+   "statistics": {
+    "associated-count": 81,
+    "error-count": 0,
+    "online-count": 81
+   }
+  },
+  "input": {
+   "active": {
+    "source": {
+     "port-number": 1,
+     "port-type": "hdmi"
+    }
+   },
+   "ports": {
+    "hdmi": {
+     "0": {
+      "meta-data": {
+       "bit-depth": 8,
+       "hdr": {
+        "format": "standard-dynamic-range"
+       },
+       "refresh-rate": 59.9,
+       "resolution": {
+        "height": 2300,
+        "width": 3904
+       },
+       "sampling": "rgb"
+      }
+     }
+    },
+    "sdi": {
+     "0": {
+      "meta-data": {
+       "refresh-rate": -1,
+       "resolution": {
+        "height": -1,
+        "width": -1
+       }
+      }
+     }
+    }
+   }
+  },
+  "output": {
+   "global-colour": {
+    "brightness": 1500,
+    "colour-temperature": 6504,
+    "gamma": 2.35
+   },
+   "network": {
+    "bit-depth": 8,
+    "cable-redundancy": {
+     "loops": {
+      "1": {
+       "state": "loop-found: A1->B1"
+      },
+      "2": {
+       "state": "no-loop-found: C1->No connection, no-loop-found: C2->No connection, loop-found: C4->D4, loop-found: C5->D5, no-loop-found: D1->No connection, no-loop-found: D3->No connection"
+      }
+     }
+    },
+    "failover": {
+     "actions": {
+      "request-failover": "Failover requested"
+     },
+     "settings": {
+      "enabled": false,
+      "modes": {
+       "on-button-press": true,
+       "on-partner-fail": true,
+       "on-partner-video-fail": true,
+       "prefer-primary": false
+      },
+      "role": "primary"
+     },
+     "state": {
+      "is-active": false,
+      "is-partner-present": true,
+      "partner-absence-duration": 0,
+      "partner-name": "Running_Backup (107)",
+      "partner-serial": "022770",
+      "partner-video-absence-duration": 0
+     }
+    },
+    "frame-rate-multiplier": 1,
+    "genlock": {
+     "internal-rate": 30,
+     "source": "internal"
+    }
+   }
+  },
+  "override": {
+   "blackout": {
+    "enabled": false,
+    "fade-time": 0.2
+   },
+   "freeze": {
+    "enabled": false
+   }
+  },
+  "presets": {
+   "active": {
+    "name": "",
+    "number": "0"
+   },
+   "items": {
+    "1": {
+     "name": "Preset 1",
+     "status": "Inactive"
+    }
+   }
+  },
+  "project": {
+   "name": "Investors_Running.ffb"
+  },
+  "system": {
+   "actions": {
+    "reboot": "System reboot requested",
+    "shutdown": "System shutdown requested"
+   },
+   "current-date-time": "2026-11-12 22:04:25",
+   "fan": {
+    "case": {
+     "one": {
+      "speed": 1890,
+      "status": true
+     },
+     "two": {
+      "speed": 1860,
+      "status": true
+     }
+    },
+    "fpga": {
+     "speed": 4620,
+     "status": true
+    }
+   },
+   "processor-name": "Running_Primary (108)",
+   "processor-type": "sx40",
+   "serial-number": "022209",
+   "software-version": "3.5.2",
+   "temperature": {
+    "ambient": 37.75,
+    "cpu": 50.625,
+    "ethernet": {
+     "copper": {
+      "a": 65,
+      "b": 46
+     },
+     "sfp": {
+      "a": 38,
+      "b": 41,
+      "c": 44,
+      "d": 46
+     }
+    },
+    "fpga": 60.125,
+    "gpu": 50,
+    "main": 46.75,
+    "psu": 52.25
+   },
+   "uptime": "2h 43m 1s"
+  }
+ }
+}

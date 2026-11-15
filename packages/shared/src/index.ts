@@ -1,7 +1,8 @@
 // Types shared by the server and the dashboard. Every processor brand is turned into a ProcessorSnapshot by its driver,
 // so the dashboard never needs to know which brand it is drawing.
 
-export type ProcessorKind = 'brompton' | 'coex' | 'vxpro';
+/** device: anything else on the network (a fiber converter, a switch), only checked for an answer. */
+export type ProcessorKind = 'brompton' | 'coex' | 'vxpro' | 'device';
 
 /** Worst first, so severities can be compared by index. */
 export const SEVERITY_ORDER = ['critical', 'warning', 'unknown', 'ok'] as const;
@@ -14,8 +15,10 @@ export interface ProcessorConfig {
   name?: string;
   kind: ProcessorKind;
   host: string;
-  /** HTTP port. Brompton defaults to 80. */
+  /** HTTP port. Brompton defaults to 80, COEX to 8001. */
   port?: number;
+  /** COEX: pixels one output port can drive, for the port load bars. Unset: worked out from the port speed and frame rate the processor reports. */
+  portCapacity?: number;
 }
 
 export interface Reading {
@@ -35,6 +38,8 @@ export interface FanStatus {
 export interface InputStatus {
   /** e.g. "SDI 1" */
   label: string;
+  /** What the input control sends to make this input active, e.g. "sdi:1" (Brompton) or "0" (COEX source id). */
+  key?: string;
   type: string;
   number: number;
   active: boolean;
@@ -56,8 +61,15 @@ export interface FailoverStatus {
 }
 
 export interface CableLoop {
+  /** Tessera's loop number: one per pair of distribution boxes (Tessera 3.5.2 numbers them from 1). */
   index: number;
-  /** Raw state text from the processor, e.g. "loop-found: A1->B1". */
+  /** Stable key for this chain's loop: the loop number and the port it starts from, e.g. "2:C4". */
+  key: string;
+  /** The output port the chain starts from, e.g. "C4". Named even when the loop is lost. */
+  port?: string;
+  /** The port the loop comes back to, e.g. "D4", while it is found. */
+  to?: string;
+  /** Raw state text for this chain, e.g. "loop-found: A1->B1" or "no-loop-found: C1->No connection". */
   state: string;
   found: boolean;
 }
@@ -90,6 +102,8 @@ export interface ProcessorSnapshot {
   inputs: InputStatus[];
   genlock?: { source: string; rate?: number };
   brightness?: number;
+  /** Brompton reports brightness in nits, COEX as a share of full brightness. Nits when missing. */
+  brightnessUnit?: 'nits' | '%';
   preset?: { number: number; name: string };
   blackout?: boolean;
   freeze?: boolean;
@@ -100,6 +114,88 @@ export interface ProcessorSnapshot {
   devices?: DeviceInfo[];
   /** Set by processors that report their own cabinet map (COEX): the wall, ready to draw. */
   topology?: ProcessorTopology;
+  /** Presets stored on the processor, for the preset control. */
+  presets?: { number: number; name: string }[];
+  /** A line on what this processor cannot report, shown on its card (VX Pro over its control protocol). */
+  note?: string;
+  /** What the dashboard may ask this processor to do. Missing when controls are off or the driver has none. */
+  controls?: ControlCapabilities;
+}
+
+// ---- Controls ----
+
+export interface ControlCapabilities {
+  brightness?: { min: number; max: number; step: number; unit: 'nits' | '%' };
+  blackout?: boolean;
+  freeze?: boolean;
+  preset?: boolean;
+  /** Inputs that can be made active, by key (see InputStatus). */
+  input?: boolean;
+  failover?: boolean;
+  reboot?: boolean;
+  /**
+   * Receiving card error counts can be reset on the dashboard: only errors counted after the reset are flagged.
+   * Nothing is sent to the processor; its own counters keep running.
+   */
+  resetErrors?: boolean;
+}
+
+export type ControlRequest =
+  | { action: 'brightness'; value: number }
+  | { action: 'blackout'; value: boolean }
+  | { action: 'freeze'; value: boolean }
+  | { action: 'preset'; value: number }
+  | { action: 'input'; value: string }
+  | { action: 'failover' }
+  | { action: 'reboot' }
+  | { action: 'resetErrors' };
+
+/** Actions that change what is on the wall in a big way; the dashboard asks to confirm them, naming the processor. */
+export const CONFIRM_ACTIONS: ControlRequest['action'][] = ['blackout', 'failover', 'input', 'reboot'];
+
+// ---- Settings and admin ----
+
+export interface AuthStatus {
+  /** This browser holds an admin session. */
+  unlocked: boolean;
+  passwordSet: boolean;
+  /** No password yet and this browser is on the machine running the monitor, so it may set the first one. */
+  canSetFirstPassword: boolean;
+  /** Minutes left before the session ends without activity. */
+  expiresInMinutes?: number;
+}
+
+export interface EmailSettings {
+  enabled: boolean;
+  host: string;
+  port: number;
+  /** TLS from the start (port 465). Otherwise STARTTLS is used when the server offers it. */
+  secure: boolean;
+  user?: string;
+  /** Write-only: the settings API sends "********" in its place. */
+  pass?: string;
+  from: string;
+  to: string[];
+  minSeverity: 'warning' | 'critical';
+  /** The same alert is not emailed again within this many minutes. */
+  repeatMinutes: number;
+}
+
+export interface HistorySeries {
+  key: string;
+  label: string;
+  unit: string;
+  points: [number, number][];
+}
+
+export interface ScanResult {
+  host: string;
+  kind: ProcessorKind;
+  name?: string;
+  model?: string;
+  serial?: string;
+  /** Already in the settings. */
+  known: boolean;
 }
 
 export interface DeviceInfo {
@@ -147,6 +243,10 @@ export interface DashboardState {
   processors: ProcessorView[];
   walls: WallView[];
   events: EventEntry[];
+  /** Alert limits, for drawing them on charts. */
+  limits: { tempWarnC: number; tempCritC: number; portLoadWarnPercent: number };
+  /** False when the settings turn the dashboard's controls off. */
+  controls: boolean;
 }
 
 // ---- Topology ----
@@ -266,4 +366,45 @@ export function worstSeverity(list: Severity[]): Severity {
   let worst = SEVERITY_ORDER.length - 1;
   for (const s of list) worst = Math.min(worst, SEVERITY_ORDER.indexOf(s));
   return SEVERITY_ORDER[worst];
+}
+
+// ---- Building a Brompton wall from what the processor reports ----
+
+/** One XD port in a cable loop report, e.g. "C4" is trunk C, port 4. */
+function trunkPort(s?: string): { trunk: string; port: number } | undefined {
+  const m = /^([A-Z]+)(\d+)$/i.exec(s ?? '');
+  return m ? { trunk: m[1].toUpperCase(), port: Number(m[2]) } : undefined;
+}
+
+/**
+ * The XD box pairs and chains a Tessera processor's cable loop reports show: one group per loop number, the trunk the
+ * loops start from on the left and the one they come back to on the right, and a chain on every XD port the
+ * processor names. Tessera does not report how many tiles are on each chain, so a chain keeps its count from
+ * `existing` when that has one, and otherwise gets an even share of `tiles` (at least 1) to be corrected by hand.
+ */
+export function wallGroupsFromLoops(loops: CableLoop[], existing: GroupLayout[] = [], tiles = 0, xdPorts = 10): GroupLayout[] {
+  const byIndex = new Map<number, CableLoop[]>();
+  for (const l of loops) byIndex.set(l.index, [...(byIndex.get(l.index) ?? []), l]);
+  const groups: { left: string; right?: string; ports: Set<number> }[] = [];
+  for (const [, list] of [...byIndex].sort((a, b) => a[0] - b[0])) {
+    const found = list.find((l) => l.found && trunkPort(l.port) && trunkPort(l.to));
+    const letters = [...new Set(list.flatMap((l) => [trunkPort(l.port)?.trunk, trunkPort(l.to)?.trunk]).filter((x): x is string => !!x))].sort();
+    const left = found ? trunkPort(found.port)!.trunk : letters[0];
+    if (!left) continue;
+    const right = found ? trunkPort(found.to)!.trunk : letters.find((x) => x !== left);
+    const ports = new Set<number>();
+    for (const l of list) for (const tp of [trunkPort(l.port), trunkPort(l.to)]) if (tp && tp.port >= 1 && tp.port <= xdPorts) ports.add(tp.port);
+    groups.push({ left, right, ports });
+  }
+  const chainCount = groups.reduce((n, g) => n + g.ports.size, 0);
+  const share = chainCount ? Math.max(1, Math.round(tiles / chainCount)) : 1;
+  return groups.map((g) => {
+    const old = existing.find((e) => e.left.trunk === g.left && (e.right?.trunk ?? undefined) === g.right);
+    const box = (trunk: string, prev?: BoxLayout): BoxLayout => ({ ...prev, name: prev?.name ?? `XD ${trunk}`, trunk, ports: prev?.ports ?? xdPorts });
+    return {
+      left: box(g.left, old?.left),
+      right: g.right ? box(g.right, old?.right) : undefined,
+      chains: Array.from({ length: xdPorts }, (_, i) => (g.ports.has(i + 1) ? (old?.chains[i] || share) : 0)),
+    };
+  });
 }

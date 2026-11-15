@@ -77,6 +77,22 @@ function check(s: ProcessorSnapshot, t: Thresholds): NewAlert[] {
     }
   }
 
+  // Processors that report their own topology (COEX): port loads, port faults and broken links between cabinets.
+  for (const g of s.topology?.groups ?? []) {
+    for (const c of g.chains) {
+      const load = c.from.load;
+      if (load && load.percent > 100) {
+        out.push({ key: `port-load:${c.id}`, rule: 'port-load', severity: 'critical', message: `${c.label} over capacity at ${Math.round(load.percent)}% (${load.pixels.toLocaleString('en-US')} pixels)` });
+      } else if (load && load.percent >= t.portLoadWarnPercent) {
+        out.push({ key: `port-load:${c.id}`, rule: 'port-load', severity: 'warning', message: `${c.label} at ${Math.round(load.percent)}% of capacity` });
+      }
+      if (c.from.state === 'lost') out.push({ key: `port:${c.id}`, rule: 'port', severity: 'critical', message: `${c.label} reports an output fault` });
+      if (c.notes.some((n) => n.startsWith('A cabinet reports the link'))) {
+        out.push({ key: `link:${c.id}`, rule: 'cabinet-link', severity: 'warning', message: `${c.label}: link between cabinets down` });
+      }
+    }
+  }
+
   const f = s.failover;
   if (f?.enabled) {
     if (f.partnerPresent === false) {
@@ -96,17 +112,15 @@ function check(s: ProcessorSnapshot, t: Thresholds): NewAlert[] {
  * Cable loops need memory: Tessera lists every possible loop, and most say "no-loop-found" because nothing is cabled
  * that way. Only a loop that was found earlier and is now lost is a problem.
  */
-export function loopAlerts(s: ProcessorSnapshot, everFound: Map<number, string>): NewAlert[] {
+export function loopAlerts(s: ProcessorSnapshot, everFound: Map<string, string>): NewAlert[] {
   if (!s.reachable) return [];
   const out: NewAlert[] = [];
   for (const loop of s.loops) {
     if (loop.found) {
-      // "loop-found: A1->B1" names the ports; a lost loop no longer does, so remember them.
-      const ports = /loop-found:\s*(\S+)/.exec(loop.state)?.[1];
-      everFound.set(loop.index, ports ?? `${loop.index + 1}`);
-    } else if (everFound.has(loop.index)) {
-      const name = everFound.get(loop.index)!.replace('->', ' to ');
-      out.push({ key: `loop:${loop.index}`, rule: 'cable-loop', severity: 'warning', message: `Cable loop ${name} broken (${loop.state})` });
+      // "loop-found: A1->B1" names both ports; a lost loop names only the first, so remember the pair.
+      everFound.set(loop.key, loop.port && loop.to ? `${loop.port} to ${loop.to}` : (loop.port ?? `loop ${loop.index}`));
+    } else if (everFound.has(loop.key)) {
+      out.push({ key: `loop:${loop.key}`, rule: 'cable-loop', severity: 'warning', message: `Cable loop ${everFound.get(loop.key)} broken (${loop.state})` });
     }
   }
   return out;

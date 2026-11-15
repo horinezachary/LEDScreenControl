@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ChainView, DashboardState, GroupView, LinkState, PortView, ProcessorView, TrunkView, WallProcessorView, WallView } from '@ledmon/shared';
 import { SEVERITY_LABEL } from '../format';
 import { kindName } from './Overview';
+import { linkHandler, processorPath } from '../route';
 
 // The topology view follows the wall diagram: the processor that normally drives the wall on top, its backup at the
 // bottom, distribution boxes as columns between them, and tile chains running between each pair of boxes. Live
@@ -11,7 +12,7 @@ type Selection = { kind: 'processor'; id: string } | { kind: 'chain'; id: string
 
 const MAX_TILES_DRAWN = 12;
 
-export function Topology({ state }: { state: DashboardState }) {
+export function Topology({ state, go }: { state: DashboardState; go: (path: string) => void }) {
   const [sel, setSel] = useState<Selection>();
   const walls = state.walls;
 
@@ -21,8 +22,8 @@ export function Topology({ state }: { state: DashboardState }) {
         <h2>No walls to draw yet</h2>
         <p>
           NovaStar COEX walls are drawn from the processor's own cabinet map. Brompton walls need a layout: add a{' '}
-          <code>walls</code> entry to <code>config.json</code> naming the primary and backup processors and the tiles on
-          each port of each distribution box (see the README), then restart.
+          wall in Settings (or a <code>walls</code> entry in <code>config.json</code>) naming the primary and backup
+          processors and the tiles on each port of each distribution box.
         </p>
       </div>
     );
@@ -36,7 +37,7 @@ export function Topology({ state }: { state: DashboardState }) {
         ))}
         <Legend />
       </main>
-      <Details state={state} sel={sel} />
+      <Details state={state} sel={sel} go={go} />
     </div>
   );
 }
@@ -47,13 +48,14 @@ function Wall({ wall, sel, onSelect }: { wall: WallView; sel?: Selection; onSele
   const at: { left: number; chains: number; right?: number }[] = [];
   wall.groups.forEach((g, i) => {
     if (i > 0) cols.push('28px');
-    const left = cols.push('minmax(96px, 120px)');
+    // A box without a partner shows port loads (COEX), which need more room.
+    const left = cols.push(g.right ? 'minmax(96px, 120px)' : 'minmax(150px, 190px)');
     const chains = cols.push('minmax(0, 1fr)');
     const right = g.right ? cols.push('minmax(96px, 120px)') : undefined;
     at.push({ left, chains, right });
   });
   const trunkCol = (t: TrunkView) => (t.side === 'left' ? at[t.group].left : at[t.group].right ?? at[t.group].left);
-  const minWidth = wall.groups.reduce((n, g) => n + 120 + (g.right ? 120 : 0) + 260, 0);
+  const minWidth = wall.groups.reduce((n, g) => n + (g.right ? 240 : 170) + 260, 0);
 
   return (
     <section className={`card wall sev-border-${wall.severity}`} aria-label={wall.name}>
@@ -226,7 +228,7 @@ function Chain({ c, selected, onClick }: { c: ChainView; selected: boolean; onCl
   const shown = c.tiles.slice(0, MAX_TILES_DRAWN);
   const rightLink = c.loop === 'broken' ? 'lost' : c.loop === 'none' ? 'none' : 'standby';
   return (
-    <button type="button" className={`chain ${selected ? 'sel' : ''}`} onClick={onClick} aria-pressed={selected} aria-label={`Chain ${c.label}, ${c.tileCount} tiles, ${SEVERITY_LABEL[c.severity]}`}>
+    <button type="button" className={`chain ${rightLink === 'none' ? 'single' : ''} ${selected ? 'sel' : ''}`} onClick={onClick} aria-pressed={selected} aria-label={`Chain ${c.label}, ${c.tileCount} tiles, ${SEVERITY_LABEL[c.severity]}`}>
       <span className={`link link-${c.from.state}`} />
       <span className="tiles">
         {shown.map((t) => (
@@ -265,8 +267,8 @@ function Legend() {
 
 // ---- Side panel ----
 
-function Details({ state, sel }: { state: DashboardState; sel?: Selection }) {
-  const body = detailBody(state, sel);
+function Details({ state, sel, go }: { state: DashboardState; sel?: Selection; go: (path: string) => void }) {
+  const body = detailBody(state, go, sel);
   return (
     <aside className="card details" aria-label="Details">
       <div className="kicker">Selected</div>
@@ -275,11 +277,11 @@ function Details({ state, sel }: { state: DashboardState; sel?: Selection }) {
   );
 }
 
-function detailBody(state: DashboardState, sel?: Selection): React.ReactNode {
+function detailBody(state: DashboardState, go: (path: string) => void, sel?: Selection): React.ReactNode {
   if (!sel) return undefined;
   if (sel.kind === 'processor') {
     const p = state.processors.find((x) => x.id === sel.id);
-    return p ? <ProcessorDetail p={p} /> : undefined;
+    return p ? <ProcessorDetail p={p} go={go} /> : undefined;
   }
   if (sel.kind === 'box') {
     const wall = state.walls.find((w) => w.id === sel.wall);
@@ -360,12 +362,16 @@ function detailBody(state: DashboardState, sel?: Selection): React.ReactNode {
   return undefined;
 }
 
-function ProcessorDetail({ p }: { p: ProcessorView }) {
+function ProcessorDetail({ p, go }: { p: ProcessorView; go: (path: string) => void }) {
   const hottest = [...p.temperatures].sort((a, b) => b.value - a.value)[0];
   const fansOk = p.fans.filter((f) => f.running).length;
   return (
     <>
-      <h3>{p.name}</h3>
+      <h3>
+        <a href={processorPath(p.id)} onClick={linkHandler(go, processorPath(p.id))}>
+          {p.name}
+        </a>
+      </h3>
       <div className="sub">
         {p.model ?? kindName(p.kind)} · <span className="mono">{p.host}</span>
       </div>
