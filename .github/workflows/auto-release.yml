@@ -13,10 +13,10 @@ name: Auto release
 #
 # Each release then gets its downloads attached, built from the release's tag:
 #   LED-Monitor-vX.Y.Z-mac.dmg           the Mac menu bar app (built on a Mac by mac.yml)
+#   LED-Monitor-vX.Y.Z-windows-setup.exe the Windows installer (built on Windows by windows.yml)
 #   led-monitor-server-vX.Y.Z.tar.gz     the server and dashboard, for any machine with Node 22 (no app)
 # To (re)build the downloads for a release that already exists, e.g. one made before this, run this workflow by hand
 # from the Actions tab and give it the tag. That makes no new release.
-# A Windows build of the launcher can be added later as another job beside "mac".
 
 on:
   push:
@@ -139,5 +139,15 @@ jobs:
     permissions:
       contents: write
     uses: ./.github/workflows/mac.yml
+    with:
+      tag: ${{ needs.target.outputs.tag }}
+
+  windows:
+    name: Windows app
+    needs: target
+    if: ${{ !cancelled() && needs.target.outputs.tag != '' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/windows.yml
     with:
       tag: ${{ needs.target.outputs.tag }}
