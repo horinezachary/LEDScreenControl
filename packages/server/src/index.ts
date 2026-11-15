@@ -6,6 +6,7 @@ import { loadConfig, type Config } from './config.js';
 import { Monitor } from './monitor.js';
 import { createHttpServer } from './http.js';
 import { demoWall, startDemoPair, type TesseraSimulator } from './sim/tessera.js';
+import { startDemoCoex, type CoexSimulator } from './sim/coex.js';
 import { levelOf, startSyslog, type SyslogServer } from './syslog.js';
 import { APP_VERSION } from './version.js';
 
@@ -16,7 +17,7 @@ export interface StartOptions {
   webRoot?: string;
   /** Overrides the port in config.json. */
   port?: number;
-  /** Adds two simulated SX40s (a primary and its backup) next to the configured processors. */
+  /** Adds two simulated SX40s (a primary and its backup) and a simulated COEX MX40 Pro next to the configured processors. */
   simulate?: boolean;
   /** Overrides syslogPort in config.json (0 turns it off). */
   syslogPort?: number;
@@ -29,7 +30,7 @@ export interface RunningServer {
   urls: string[];
   config: Config;
   monitor: Monitor;
-  simulators: TesseraSimulator[];
+  simulators: (TesseraSimulator | CoexSimulator)[];
   syslog?: SyslogServer;
   close(): Promise<void>;
 }
@@ -43,7 +44,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
   const port = opts.port ?? config.port;
   const monitor = new Monitor(config, opts.dataDir);
 
-  const simulators: TesseraSimulator[] = [];
+  const simulators: (TesseraSimulator | CoexSimulator)[] = [];
   if (opts.simulate) {
     const { sims, ports } = await startDemoPair();
     simulators.push(...sims);
@@ -52,6 +53,10 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     });
     monitor.addWall(demoWall(`sim-${sims[0].options.serial}`, `sim-${sims[1].options.serial}`));
     log(`Simulating two SX40s on ports ${ports.join(' and ')}. Faults: GET http://127.0.0.1:${ports[0]}/sim/scenario?set=signal-loss`);
+    const coex = await startDemoCoex();
+    simulators.push(coex.sim);
+    monitor.add({ id: `sim-${coex.sim.options.serial}`, kind: 'coex', host: '127.0.0.1', port: coex.port });
+    log(`Simulating a COEX MX40 Pro on port ${coex.port}. Faults: GET http://127.0.0.1:${coex.port}/sim/scenario?set=port-overload`);
   }
 
   const server: http.Server = createHttpServer(monitor, opts.webRoot);

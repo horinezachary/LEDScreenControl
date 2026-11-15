@@ -6,18 +6,19 @@ import { worstSeverity } from '@ledmon/shared';
 import type { Config } from './config.js';
 import type { Driver } from './drivers/types.js';
 import { bromptonDriver } from './drivers/brompton.js';
+import { coexDriver } from './drivers/coex.js';
 import { EventLog } from './events.js';
 import { evaluate, loopAlerts } from './rules.js';
 import { Topology } from './topology.js';
 import { APP_VERSION } from './version.js';
 
 const PHASE_NOTE: Record<string, string> = {
-  coex: 'NovaStar COEX support is not built yet (planned for phase 3).',
   vxpro: 'NovaStar VX Pro support is not built yet (planned for phase 5).',
 };
 
 export function driverFor(p: ProcessorConfig): Driver | undefined {
   if (p.kind === 'brompton') return bromptonDriver(p);
+  if (p.kind === 'coex') return coexDriver(p);
   return undefined;
 }
 

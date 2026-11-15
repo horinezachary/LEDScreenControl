@@ -79,7 +79,7 @@ export function parseConfig(raw: unknown): Config {
   list.forEach((p, i) => {
     const where = `processors[${i}]`;
     if (typeof p !== 'object' || p === null) throw new ConfigError(`${where} must be an object.`);
-    const { id, name, kind, host, port } = p as Record<string, unknown>;
+    const { id, name, kind, host, port, portCapacity } = p as Record<string, unknown>;
     if (typeof host !== 'string' || !host.trim()) throw new ConfigError(`${where} needs a "host" (IP address).`);
     if (!KINDS.includes(kind as ProcessorKind)) {
       throw new ConfigError(`${where}.kind must be one of ${KINDS.join(', ')}.`);
@@ -93,6 +93,7 @@ export function parseConfig(raw: unknown): Config {
       kind: kind as ProcessorKind,
       host: host.trim(),
       port: typeof port === 'number' ? port : undefined,
+      portCapacity: typeof portCapacity === 'number' && portCapacity > 0 ? portCapacity : undefined,
     });
   });
   config.walls = parseWalls(obj.walls, ids);

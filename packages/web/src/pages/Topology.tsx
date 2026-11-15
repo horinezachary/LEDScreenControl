@@ -47,13 +47,14 @@ function Wall({ wall, sel, onSelect }: { wall: WallView; sel?: Selection; onSele
   const at: { left: number; chains: number; right?: number }[] = [];
   wall.groups.forEach((g, i) => {
     if (i > 0) cols.push('28px');
-    const left = cols.push('minmax(96px, 120px)');
+    // A box without a partner shows port loads (COEX), which need more room.
+    const left = cols.push(g.right ? 'minmax(96px, 120px)' : 'minmax(150px, 190px)');
     const chains = cols.push('minmax(0, 1fr)');
     const right = g.right ? cols.push('minmax(96px, 120px)') : undefined;
     at.push({ left, chains, right });
   });
   const trunkCol = (t: TrunkView) => (t.side === 'left' ? at[t.group].left : at[t.group].right ?? at[t.group].left);
-  const minWidth = wall.groups.reduce((n, g) => n + 120 + (g.right ? 120 : 0) + 260, 0);
+  const minWidth = wall.groups.reduce((n, g) => n + (g.right ? 240 : 170) + 260, 0);
 
   return (
     <section className={`card wall sev-border-${wall.severity}`} aria-label={wall.name}>
@@ -226,7 +227,7 @@ function Chain({ c, selected, onClick }: { c: ChainView; selected: boolean; onCl
   const shown = c.tiles.slice(0, MAX_TILES_DRAWN);
   const rightLink = c.loop === 'broken' ? 'lost' : c.loop === 'none' ? 'none' : 'standby';
   return (
-    <button type="button" className={`chain ${selected ? 'sel' : ''}`} onClick={onClick} aria-pressed={selected} aria-label={`Chain ${c.label}, ${c.tileCount} tiles, ${SEVERITY_LABEL[c.severity]}`}>
+    <button type="button" className={`chain ${rightLink === 'none' ? 'single' : ''} ${selected ? 'sel' : ''}`} onClick={onClick} aria-pressed={selected} aria-label={`Chain ${c.label}, ${c.tileCount} tiles, ${SEVERITY_LABEL[c.severity]}`}>
       <span className={`link link-${c.from.state}`} />
       <span className="tiles">
         {shown.map((t) => (

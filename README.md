@@ -7,7 +7,7 @@ server, so nothing else needs installing.
 
 Design: [LED Processor Monitor: Design](https://claude.ai/artifact/Tk6LkG374Yuy8QKAyFK9Bs).
 
-## What works today (phases 1 and 2)
+## What works today (phases 1 to 3)
 
 - Brompton Tessera processors over their HTTP IP control API (checked against Tessera 3.5.2): temperatures, fans,
   inputs and signal, genlock source, brightness, preset, blackout and freeze, failover role and partner, cable loops,
@@ -20,12 +20,22 @@ Design: [LED Processor Monitor: Design](https://claude.ai/artifact/Tk6LkG374Yuy8
   processor, and each chain's cable loop (a broken loop turns its redundant end red). Click anything for details.
   Brompton walls come from a layout in `config.json` (below), since Tessera does not report where tiles are.
 - Events page: the whole log, filtered by processor, level, source, time and text, with a CSV download.
+- NovaStar COEX processors (MX40 Pro, CX40 Pro) over the COEX Open API on port 8001: temperatures, fans, inputs,
+  brightness, blackout and freeze, preset, backup, and every cabinet with its health. Their walls are drawn from the
+  processor's own cabinet map, one chain per output port in connection order, with each port's load: the pixels of
+  its cabinets against the port's capacity (650,000 by default, a 1G port at 8 bit and 60 Hz; set `"portCapacity"`
+  on the processor to change it). Alerts for ports at 90% and over 100%, output faults, cabinets that stop answering
+  or report faults, and broken links between cabinets.
 - Processor syslog: point Tessera's syslog at this machine (UDP 5514) and every line lands in the event log under
   the processor that sent it. This is how Tessera reports things its API does not, such as genlock loss.
 - The Mac menu bar app.
 - A simulator for two SX40s (a primary and its backup) with faults you can switch on.
 
-Read-only: nothing sends a control command to a processor yet. NovaStar processors show as "not supported yet".
+Read-only: nothing sends a control command to a processor yet. VX2000 Pro processors show as "not supported yet".
+
+COEX caveats: NovaStar documents the field names but not their units or what each status number means. The driver
+assumes °C, volts, brightness from 0 to 1 and status 0 as normal; check these against a real processor. COEX refuses
+API requests while NovaStar's VMP software has the processor open, and the dashboard says so.
 
 ## Run it
 
@@ -36,7 +46,7 @@ scripts/deploy.sh
 ```
 
 It appears in the menu bar. **Open Dashboard** opens it here; **Copy Link for Others** copies the address other people
-on the network can open. **Demo Mode** adds two simulated SX40s.
+on the network can open. **Demo Mode** adds two simulated SX40s and a simulated COEX MX40 Pro.
 
 Without the app (any machine with Node 22):
 
@@ -106,6 +116,9 @@ curl 'http://127.0.0.1:<port>/sim/scenario?set=signal-loss'
 ```
 
 Scenarios: `normal`, `signal-loss`, `fan-failure`, `hot`, `tiles-offline`, `loop-broken`, `partner-lost`, `failover`.
+COEX simulator scenarios: `normal`, `signal-loss`, `cabinet-offline`, `cabinet-hot`, `link-broken`, `fan-failure`,
+`port-overload`, `port-down`, `vmp-busy`.
+
 Demo mode also draws a simulated wall: two pairs of XD boxes with ten chains of eight tiles each. `loop-broken` breaks
 the loop on A4 to B4.
 

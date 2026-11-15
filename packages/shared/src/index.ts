@@ -14,8 +14,10 @@ export interface ProcessorConfig {
   name?: string;
   kind: ProcessorKind;
   host: string;
-  /** HTTP port. Brompton defaults to 80. */
+  /** HTTP port. Brompton defaults to 80, COEX to 8001. */
   port?: number;
+  /** COEX: pixels one output port can drive, for the port load bars. Defaults to 650,000 (a 1G port at 8 bit, 60 Hz). */
+  portCapacity?: number;
 }
 
 export interface Reading {
@@ -90,6 +92,8 @@ export interface ProcessorSnapshot {
   inputs: InputStatus[];
   genlock?: { source: string; rate?: number };
   brightness?: number;
+  /** Brompton reports brightness in nits, COEX as a share of full brightness. Nits when missing. */
+  brightnessUnit?: 'nits' | '%';
   preset?: { number: number; name: string };
   blackout?: boolean;
   freeze?: boolean;
