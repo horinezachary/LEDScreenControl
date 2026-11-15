@@ -20,7 +20,8 @@ describe('parseTessera', () => {
     expect(d.fans.map((f) => f.label)).toEqual(['Case 1 fan', 'Case 2 fan', 'FPGA fan']);
     const active = d.inputs.find((i) => i.active);
     expect(active).toMatchObject({ label: 'SDI 1', signal: true, width: 3840, height: 2160, rate: 59.94 });
-    expect(d.inputs.find((i) => i.label === 'SDI 2')).toMatchObject({ signal: false, width: undefined });
+    expect(d.inputs.find((i) => i.label === 'HDMI 1')).toMatchObject({ key: 'hdmi:1', signal: false, width: undefined });
+    expect(d.presets?.map((p) => p.name)).toEqual(['Show Config', 'Rehearsal', 'Walk-in', 'Test']);
     expect(d.failover).toMatchObject({ enabled: true, role: 'primary', active: false, partnerPresent: true, partnerName: 'Stage Backup' });
     expect(d.loops[0]).toEqual({ index: 0, state: 'loop-found: A1->B1', found: true });
     expect(d.loops).toHaveLength(20);

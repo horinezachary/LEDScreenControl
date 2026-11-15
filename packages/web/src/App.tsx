@@ -1,21 +1,26 @@
 import type { DashboardState, EventEntry } from '@ledmon/shared';
 import { useDashboard, useNow, type Connection } from './useDashboard';
 import { ago, clock } from './format';
-import { linkHandler, PAGES, useRoute } from './route';
+import { linkHandler, TABS, useRoute } from './route';
+import { useAuth } from './api';
 import { Overview } from './pages/Overview';
 import { Topology } from './pages/Topology';
 import { EventsPage } from './pages/Events';
+import { ProcessorPage } from './pages/Processor';
+import { SettingsPage } from './pages/Settings';
 
 export function App() {
   const { state, connection, receivedAt } = useDashboard();
   const now = useNow();
-  const [page, go] = useRoute();
+  const [route, go] = useRoute();
+  const page = route.page;
+  const { auth, setAuth } = useAuth();
 
   return (
     <div className="page">
-      <Header state={state} connection={connection} receivedAt={receivedAt} now={now} />
+      <Header state={state} connection={connection} receivedAt={receivedAt} now={now} unlocked={!!auth?.unlocked} go={go} />
       <nav className="tabs" aria-label="Views">
-        {PAGES.map((p) => (
+        {TABS.map((p) => (
           <a
             key={p.page}
             href={p.path}
@@ -27,16 +32,20 @@ export function App() {
           </a>
         ))}
       </nav>
-      {!state ? (
+      {page === 'settings' ? (
+        <SettingsPage auth={auth} setAuth={setAuth} />
+      ) : !state ? (
         <p className="empty">Connecting to the monitor…</p>
+      ) : page === 'processor' && route.id ? (
+        <ProcessorPage state={state} id={route.id} now={now} />
       ) : page === 'topology' ? (
-        <Topology state={state} />
+        <Topology state={state} go={go} />
       ) : page === 'events' ? (
         <EventsPage state={state} />
       ) : (
         <div className="layout">
           <main className="grid" aria-label="Processors">
-            <Overview state={state} now={now} />
+            <Overview state={state} now={now} go={go} />
           </main>
           <RecentEvents events={state.events} go={go} />
         </div>
@@ -46,7 +55,21 @@ export function App() {
   );
 }
 
-function Header({ state, connection, receivedAt, now }: { state?: DashboardState; connection: Connection; receivedAt?: number; now: number }) {
+function Header({
+  state,
+  connection,
+  receivedAt,
+  now,
+  unlocked,
+  go,
+}: {
+  state?: DashboardState;
+  connection: Connection;
+  receivedAt?: number;
+  now: number;
+  unlocked: boolean;
+  go: (path: string) => void;
+}) {
   const total = state?.processors.length ?? 0;
   const alerts = state?.processors.reduce((n, p) => n + p.alerts.length, 0) ?? 0;
   const sev = state?.severity ?? 'unknown';
@@ -72,6 +95,11 @@ function Header({ state, connection, receivedAt, now }: { state?: DashboardState
           {connection === 'lost' ? 'Monitor offline' : headline}
         </span>
       </div>
+      {unlocked && (
+        <a className="pill sev-unknown unlocked" href="/settings" onClick={linkHandler(go, '/settings')} title="This browser can change the settings until it locks them or is idle for 30 minutes.">
+          Settings unlocked
+        </a>
+      )}
     </header>
   );
 }

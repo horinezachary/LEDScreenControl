@@ -37,6 +37,8 @@ export interface FanStatus {
 export interface InputStatus {
   /** e.g. "SDI 1" */
   label: string;
+  /** What the input control sends to make this input active, e.g. "sdi:1" (Brompton) or "0" (COEX source id). */
+  key?: string;
   type: string;
   number: number;
   active: boolean;
@@ -104,6 +106,80 @@ export interface ProcessorSnapshot {
   devices?: DeviceInfo[];
   /** Set by processors that report their own cabinet map (COEX): the wall, ready to draw. */
   topology?: ProcessorTopology;
+  /** Presets stored on the processor, for the preset control. */
+  presets?: { number: number; name: string }[];
+  /** What the dashboard may ask this processor to do. Missing when controls are off or the driver has none. */
+  controls?: ControlCapabilities;
+}
+
+// ---- Controls ----
+
+export interface ControlCapabilities {
+  brightness?: { min: number; max: number; step: number; unit: 'nits' | '%' };
+  blackout?: boolean;
+  freeze?: boolean;
+  preset?: boolean;
+  /** Inputs that can be made active, by key (see InputStatus). */
+  input?: boolean;
+  failover?: boolean;
+  reboot?: boolean;
+}
+
+export type ControlRequest =
+  | { action: 'brightness'; value: number }
+  | { action: 'blackout'; value: boolean }
+  | { action: 'freeze'; value: boolean }
+  | { action: 'preset'; value: number }
+  | { action: 'input'; value: string }
+  | { action: 'failover' }
+  | { action: 'reboot' };
+
+/** Actions that change what is on the wall in a big way; the dashboard asks to confirm them, naming the processor. */
+export const CONFIRM_ACTIONS: ControlRequest['action'][] = ['blackout', 'failover', 'input', 'reboot'];
+
+// ---- Settings and admin ----
+
+export interface AuthStatus {
+  /** This browser holds an admin session. */
+  unlocked: boolean;
+  passwordSet: boolean;
+  /** No password yet and this browser is on the machine running the monitor, so it may set the first one. */
+  canSetFirstPassword: boolean;
+  /** Minutes left before the session ends without activity. */
+  expiresInMinutes?: number;
+}
+
+export interface EmailSettings {
+  enabled: boolean;
+  host: string;
+  port: number;
+  /** TLS from the start (port 465). Otherwise STARTTLS is used when the server offers it. */
+  secure: boolean;
+  user?: string;
+  /** Write-only: the settings API sends "********" in its place. */
+  pass?: string;
+  from: string;
+  to: string[];
+  minSeverity: 'warning' | 'critical';
+  /** The same alert is not emailed again within this many minutes. */
+  repeatMinutes: number;
+}
+
+export interface HistorySeries {
+  key: string;
+  label: string;
+  unit: string;
+  points: [number, number][];
+}
+
+export interface ScanResult {
+  host: string;
+  kind: ProcessorKind;
+  name?: string;
+  model?: string;
+  serial?: string;
+  /** Already in the settings. */
+  known: boolean;
 }
 
 export interface DeviceInfo {
@@ -151,6 +227,10 @@ export interface DashboardState {
   processors: ProcessorView[];
   walls: WallView[];
   events: EventEntry[];
+  /** Alert limits, for drawing them on charts. */
+  limits: { tempWarnC: number; tempCritC: number; portLoadWarnPercent: number };
+  /** False when the settings turn the dashboard's controls off. */
+  controls: boolean;
 }
 
 // ---- Topology ----

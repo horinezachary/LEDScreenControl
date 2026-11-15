@@ -5,8 +5,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { ServerMessage } from '@ledmon/shared';
-import type { Monitor } from './monitor.js';
-import { eventsCsv, type EventFilter } from './events.js';
+import { handleApi, type ApiContext } from './api.js';
 
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -23,42 +22,22 @@ const FALLBACK_PAGE = `<!doctype html><meta charset="utf-8"><title>LED Monitor</
 <body style="font-family:system-ui;padding:40px;background:#0e1116;color:#e8ebf0"><div id="root">
 <h1>The dashboard is not built</h1><p>Run <code>scripts/build.sh</code>, then restart. The JSON state is at <a style="color:#7fb0ff" href="/api/state">/api/state</a>.</p></div>`;
 
-export function createHttpServer(monitor: Monitor, webRoot?: string): http.Server {
+export function createHttpServer(ctx: ApiContext, webRoot?: string): http.Server {
+  const { monitor } = ctx;
   const root = webRoot && fs.existsSync(path.join(webRoot, 'index.html')) ? path.resolve(webRoot) : undefined;
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      res.writeHead(405, { allow: 'GET, HEAD' }).end();
-      return;
-    }
     if (url.pathname === '/healthz') {
       res.writeHead(200, { 'content-type': 'text/plain' }).end('ok');
       return;
     }
-    if (url.pathname === '/api/state') {
-      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-      res.end(JSON.stringify(monitor.state()));
-      return;
-    }
-    if (url.pathname === '/api/events' || url.pathname === '/api/events.csv') {
-      const events = monitor.events.search(eventFilter(url.searchParams));
-      if (url.pathname.endsWith('.csv')) {
-        const stamp = new Date().toISOString().slice(0, 10);
-        res.writeHead(200, {
-          'content-type': 'text/csv; charset=utf-8',
-          'content-disposition': `attachment; filename="led-monitor-events-${stamp}.csv"`,
-          'cache-control': 'no-store',
-        });
-        res.end(eventsCsv(events));
-      } else {
-        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-        res.end(JSON.stringify(events));
-      }
-      return;
-    }
     if (url.pathname.startsWith('/api/')) {
-      res.writeHead(404, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'Not found' }));
+      void handleApi(ctx, req, res, url);
+      return;
+    }
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.writeHead(405, { allow: 'GET, HEAD' }).end();
       return;
     }
     if (!root) {
@@ -90,23 +69,6 @@ export function createHttpServer(monitor: Monitor, webRoot?: string): http.Serve
     wss.close();
   });
   return server;
-}
-
-function eventFilter(q: URLSearchParams): EventFilter {
-  const num = (k: string) => (q.get(k) && Number.isFinite(Number(q.get(k))) ? Number(q.get(k)) : undefined);
-  const levels = q.get('level')?.split(',').filter((l): l is NonNullable<EventFilter['levels']>[number] =>
-    ['info', 'ok', 'warning', 'critical'].includes(l),
-  );
-  const source = q.get('source');
-  return {
-    processorId: q.get('processor') || undefined,
-    levels: levels?.length ? levels : undefined,
-    source: source === 'monitor' || source === 'syslog' || source === 'control' ? source : undefined,
-    q: q.get('q') || undefined,
-    since: num('since'),
-    until: num('until'),
-    limit: num('limit'),
-  };
 }
 
 function serveStatic(root: string, pathname: string, res: http.ServerResponse): void {

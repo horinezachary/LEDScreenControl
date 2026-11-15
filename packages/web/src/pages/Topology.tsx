@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ChainView, DashboardState, GroupView, LinkState, PortView, ProcessorView, TrunkView, WallProcessorView, WallView } from '@ledmon/shared';
 import { SEVERITY_LABEL } from '../format';
 import { kindName } from './Overview';
+import { linkHandler, processorPath } from '../route';
 
 // The topology view follows the wall diagram: the processor that normally drives the wall on top, its backup at the
 // bottom, distribution boxes as columns between them, and tile chains running between each pair of boxes. Live
@@ -11,7 +12,7 @@ type Selection = { kind: 'processor'; id: string } | { kind: 'chain'; id: string
 
 const MAX_TILES_DRAWN = 12;
 
-export function Topology({ state }: { state: DashboardState }) {
+export function Topology({ state, go }: { state: DashboardState; go: (path: string) => void }) {
   const [sel, setSel] = useState<Selection>();
   const walls = state.walls;
 
@@ -21,8 +22,8 @@ export function Topology({ state }: { state: DashboardState }) {
         <h2>No walls to draw yet</h2>
         <p>
           NovaStar COEX walls are drawn from the processor's own cabinet map. Brompton walls need a layout: add a{' '}
-          <code>walls</code> entry to <code>config.json</code> naming the primary and backup processors and the tiles on
-          each port of each distribution box (see the README), then restart.
+          wall in Settings (or a <code>walls</code> entry in <code>config.json</code>) naming the primary and backup
+          processors and the tiles on each port of each distribution box.
         </p>
       </div>
     );
@@ -36,7 +37,7 @@ export function Topology({ state }: { state: DashboardState }) {
         ))}
         <Legend />
       </main>
-      <Details state={state} sel={sel} />
+      <Details state={state} sel={sel} go={go} />
     </div>
   );
 }
@@ -266,8 +267,8 @@ function Legend() {
 
 // ---- Side panel ----
 
-function Details({ state, sel }: { state: DashboardState; sel?: Selection }) {
-  const body = detailBody(state, sel);
+function Details({ state, sel, go }: { state: DashboardState; sel?: Selection; go: (path: string) => void }) {
+  const body = detailBody(state, go, sel);
   return (
     <aside className="card details" aria-label="Details">
       <div className="kicker">Selected</div>
@@ -276,11 +277,11 @@ function Details({ state, sel }: { state: DashboardState; sel?: Selection }) {
   );
 }
 
-function detailBody(state: DashboardState, sel?: Selection): React.ReactNode {
+function detailBody(state: DashboardState, go: (path: string) => void, sel?: Selection): React.ReactNode {
   if (!sel) return undefined;
   if (sel.kind === 'processor') {
     const p = state.processors.find((x) => x.id === sel.id);
-    return p ? <ProcessorDetail p={p} /> : undefined;
+    return p ? <ProcessorDetail p={p} go={go} /> : undefined;
   }
   if (sel.kind === 'box') {
     const wall = state.walls.find((w) => w.id === sel.wall);
@@ -361,12 +362,16 @@ function detailBody(state: DashboardState, sel?: Selection): React.ReactNode {
   return undefined;
 }
 
-function ProcessorDetail({ p }: { p: ProcessorView }) {
+function ProcessorDetail({ p, go }: { p: ProcessorView; go: (path: string) => void }) {
   const hottest = [...p.temperatures].sort((a, b) => b.value - a.value)[0];
   const fansOk = p.fans.filter((f) => f.running).length;
   return (
     <>
-      <h3>{p.name}</h3>
+      <h3>
+        <a href={processorPath(p.id)} onClick={linkHandler(go, processorPath(p.id))}>
+          {p.name}
+        </a>
+      </h3>
       <div className="sub">
         {p.model ?? kindName(p.kind)} · <span className="mono">{p.host}</span>
       </div>

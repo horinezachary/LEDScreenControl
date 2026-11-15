@@ -88,6 +88,7 @@ function buildMenu(): void {
       enabled: !!running,
       click: () => clipboard.writeText(shareUrl()),
     },
+    { label: 'Open Settings', enabled: !!running, click: () => void shell.openExternal(`${dashboardUrl()}/settings`) },
     { type: 'separator' },
     {
       label: 'Demo Mode (simulated processors)',
@@ -99,7 +100,7 @@ function buildMenu(): void {
       },
     },
     { label: 'Open Settings Folder', click: () => void shell.openPath(dataDir()) },
-    { label: 'Restart Server (after editing settings)', click: () => void restart() },
+    { label: 'Restart Server (after editing the settings file)', click: () => void restart() },
     {
       label: 'Start at Login',
       type: 'checkbox',

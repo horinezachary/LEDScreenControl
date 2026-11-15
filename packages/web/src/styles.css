@@ -207,3 +207,89 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
 .event-table th { text-align: left; font-weight: 500; color: var(--muted); padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); }
 .event-table td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
 .event-table td.lvl-info { color: var(--idle); }
+
+/* ---- Phase 4: processor page, controls, charts, settings ---- */
+.brand h2 a, .proc-head h2 a, .details h3 a { color: inherit; text-decoration: none; }
+.proc-head h2 a:hover, .details h3 a:hover { color: var(--accent); text-decoration: underline; }
+.unlocked { text-decoration: none; }
+.note.good { color: var(--ok); }
+.note.bad, td.bad, .mono.bad { color: var(--crit); }
+h3 { font-size: 13px; font-weight: 600; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+h4 { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
+
+.proc-page { display: flex; flex-direction: column; gap: 16px; }
+.proc-page .big { font-size: 20px; }
+.proc-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+@media (max-width: 420px) { .proc-cols { grid-template-columns: minmax(0, 1fr); } }
+.plain { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 13px; }
+.plain th, .plain td { text-align: left; padding: 7px 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.plain th { color: var(--muted); font-weight: 400; width: 40%; padding-right: 12px; }
+.plain tr:last-child th, .plain tr:last-child td { border-bottom: 0; }
+
+.section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.section-head h3 { margin: 0; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--idle-line); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 12.5px; background: transparent; color: var(--muted); border: 0; border-right: 1px solid var(--idle-line); padding: 6px 12px; cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button.on { background: #1b2a44; color: var(--text); font-weight: 600; }
+
+.controls { display: flex; flex-direction: column; gap: 12px; }
+.control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.control-row > label, .control-row > .label { width: 80px; flex: none; color: var(--muted); font-size: 13px; }
+.control-row input[type='range'] { flex: 1 1 140px; accent-color: var(--accent); padding: 0; }
+.control-row .num { width: 84px; }
+.control-row select { flex: 1 1 160px; }
+.control-row .unit { color: var(--muted); font-size: 12px; }
+.confirm { border: 1px solid var(--crit-line); background: var(--crit-bg); border-radius: 10px; padding: 12px 14px; }
+.confirm p { margin: 0 0 10px; }
+.confirm-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chart-group { margin-top: 14px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.chart { margin: 0; background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 8px; padding: 10px 10px 4px; min-width: 0; }
+.chart figcaption { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; margin-bottom: 4px; }
+.chart-now { color: var(--text); font-weight: 600; }
+.chart-box { position: relative; min-width: 0; }
+.chart svg { display: block; touch-action: pan-y; }
+.chart .grid { stroke: var(--line-soft); stroke-width: 1; }
+.chart .axis { fill: var(--muted); font-size: 10.5px; }
+.chart .line { fill: none; stroke: #3987e5; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .limit { stroke: var(--warn); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart .limit-label { fill: var(--warn); }
+.chart .cross { stroke: var(--muted); stroke-width: 1; }
+.chart .dot-mark { fill: #3987e5; stroke: var(--panel-2); stroke-width: 2; }
+.tooltip { position: absolute; top: 4px; width: 130px; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; font-size: 12px; pointer-events: none; }
+.tooltip span { color: var(--muted); }
+
+.settings { display: flex; flex-direction: column; gap: 16px; }
+.settings-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 2; }
+.settings-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.narrow { max-width: 520px; }
+.form { display: flex; flex-direction: column; gap: 12px; }
+.form h2 { font-size: 15px; font-weight: 600; }
+.form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.form label > span { color: var(--muted); font-size: 12px; }
+.form label.check { flex-direction: row; align-items: flex-start; gap: 8px; color: var(--text); }
+.form label.check input { margin-top: 2px; }
+.inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.grid-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.grid-form .wide { grid-column: 1 / -1; }
+.grid-form label.check { align-self: end; }
+.short { width: 76px; }
+.table-scroll { overflow-x: auto; }
+.edit-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.edit-table th { text-align: left; color: var(--muted); font-weight: 400; font-size: 12px; padding: 0 8px 6px 0; }
+.edit-table td { padding: 4px 8px 4px 0; vertical-align: middle; }
+.edit-table input, .edit-table select { width: 100%; min-width: 90px; }
+.found { list-style: none; margin: 0; padding: 0; }
+.found li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.group-edit { border: 1px solid var(--line-soft); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.group-boxes { display: flex; flex-wrap: wrap; gap: 12px; }
+.box-edit { flex: 1 1 240px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px 12px; display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
+.box-edit legend { color: var(--muted); font-size: 12px; padding: 0 4px; }
+.chain-edit { display: flex; flex-direction: column; gap: 6px; }
+.chain-cells { display: flex; flex-wrap: wrap; gap: 6px; }
+.form label.chain-cell { width: 64px; gap: 2px; }
+.chain-cell input { width: 100%; }
+.proc-page .events { flex: none; }
+.group-edit > .btn, .form > .btn, .form > .inline > .btn { align-self: flex-start; }

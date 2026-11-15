@@ -8,6 +8,8 @@ import { createHttpServer } from './http.js';
 import { demoWall, startDemoPair, type TesseraSimulator } from './sim/tessera.js';
 import { startDemoCoex, type CoexSimulator } from './sim/coex.js';
 import { levelOf, startSyslog, type SyslogServer } from './syslog.js';
+import { Auth } from './auth.js';
+import { Alerter, type AlertChange } from './alerter.js';
 import { APP_VERSION } from './version.js';
 
 export interface StartOptions {
@@ -59,7 +61,13 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     log(`Simulating a COEX MX40 Pro on port ${coex.port}. Faults: GET http://127.0.0.1:${coex.port}/sim/scenario?set=port-overload`);
   }
 
-  const server: http.Server = createHttpServer(monitor, opts.webRoot);
+  const auth = new Auth(opts.dataDir);
+  const alerter = new Alerter(config.email, undefined, (level, message) => monitor.events.add({ level, message }));
+  monitor.on('alert', (c: AlertChange) => alerter.handle(c));
+  const server: http.Server = createHttpServer(
+    { monitor, auth, dataDir: opts.dataDir, onSettings: (c) => alerter.update(c.email) },
+    opts.webRoot,
+  );
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
     server.listen(port, '0.0.0.0', () => {
@@ -88,6 +96,8 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     syslog,
     async close() {
       monitor.stop();
+      await alerter.flush();
+      alerter.stop();
       await syslog?.close();
       await new Promise<void>((resolve) => server.close(() => resolve()));
       server.closeAllConnections?.();
