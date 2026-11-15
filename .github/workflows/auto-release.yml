@@ -10,10 +10,23 @@ name: Auto release
 # app are built, and the dashboard footer and the launcher menu show it.
 #
 # The very first release counts from 0.0.0 over the whole history, so a first "feat:" merge is v0.1.0.
+#
+# Each release then gets its downloads attached, built from the release's tag:
+#   LED-Monitor-vX.Y.Z-mac.dmg           the Mac menu bar app (built on a Mac by mac.yml)
+#   led-monitor-server-vX.Y.Z.tar.gz     the server and dashboard, for any machine with Node 22 (no app)
+# To (re)build the downloads for a release that already exists, e.g. one made before this, run this workflow by hand
+# from the Actions tab and give it the tag. That makes no new release.
+# A Windows build of the launcher can be added later as another job beside "mac".
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag (vX.Y.Z) to build and attach the downloads for. No new release is made.
+        type: string
+        required: true
 
 permissions:
   contents: write
@@ -25,8 +38,10 @@ concurrency:
 
 jobs:
   release:
-    if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
+    if: ${{ github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.next && format('v{0}', steps.version.outputs.next) || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -68,3 +83,61 @@ jobs:
           else
             gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag --latest
           fi
+
+  # Which release the downloads go on: the one just made, or the one named on a manual run.
+  target:
+    needs: release
+    if: ${{ !cancelled() && (needs.release.result == 'success' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || needs.release.outputs.tag }}
+        run: |
+          if [ -z "$TAG" ]; then echo "No new release, nothing to attach."; echo "tag=" >> "$GITHUB_OUTPUT"; exit 0; fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null || { echo "There is no release $TAG." >&2; exit 1; }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  server:
+    name: Server bundle
+    needs: target
+    if: ${{ !cancelled() && needs.target.outputs.tag != '' }}
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ needs.target.outputs.tag }}
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.target.outputs.tag }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        run: SKIP_TESTS=1 scripts/build.sh
+      - name: Pack and attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Same layout as the repo, so dist/cli.cjs finds the dashboard at ../../web/dist without --web.
+          root="led-monitor-$TAG"
+          mkdir -p "$root/server/dist" "$root/web"
+          cp packages/server/dist/cli.cjs "$root/server/dist/"
+          cp -R packages/web/dist "$root/web/dist"
+          printf 'LED Monitor %s (server and dashboard, no app). Needs Node.js 22 or newer.\n\n  node server/dist/cli.cjs --data ./data              # http://localhost:8080\n  node server/dist/cli.cjs --simulate --data ./data   # demo mode with two simulated SX40s\n\nProcessors go in data/config.json; see README.md in the repository.\n' "$TAG" > "$root/README.txt"
+          tar -czf "led-monitor-server-$TAG.tar.gz" "$root"
+          gh release upload "$TAG" "led-monitor-server-$TAG.tar.gz" --clobber --repo "$GITHUB_REPOSITORY"
+
+  mac:
+    name: Mac app
+    needs: target
+    if: ${{ !cancelled() && needs.target.outputs.tag != '' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/mac.yml
+    with:
+      tag: ${{ needs.target.outputs.tag }}

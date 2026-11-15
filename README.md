@@ -88,7 +88,13 @@ npm test
 Every merge to main is released automatically: `.github/workflows/auto-release.yml` tags it `vX.Y.Z` and publishes a
 GitHub release. PR titles decide the bump: `feat:` minor, `fix:` (or anything else) patch, `!:` or `BREAKING CHANGE`
 major, `[skip release]` none. The tag is the version; `scripts/app-version.sh` reads it for the dashboard footer and
-the app. The Mac app is built on every pull request (Actions, "Mac app") and can be downloaded from the run.
+the app.
+
+Each release carries its downloads, built from the release's tag: `LED-Monitor-vX.Y.Z-mac.dmg` (the Mac app) and
+`led-monitor-server-vX.Y.Z.tar.gz` (the server and dashboard for any machine with Node 22: unpack it and run
+`node server/dist/cli.cjs --data ./data`). To build them for a release that has none, run "Auto release" by hand from
+the Actions tab with the tag. The Mac app is also built on every pull request (Actions, "Mac app") and can be
+downloaded from the run.
 
 The app is not signed. When it comes from a download rather than `scripts/deploy.sh`, open it the first time with
 right-click, **Open**.
