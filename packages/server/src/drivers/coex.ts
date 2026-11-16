@@ -21,6 +21,7 @@ import type {
   Reading,
   Severity,
   TileSummary,
+  TileTemperature,
   TileView,
 } from '@ledmon/shared';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -237,6 +238,7 @@ export function parseCoex(r: CoexResponses, configuredCapacity?: number, baselin
         }
       : undefined;
 
+  const tileTemperatures: TileTemperature[] = [];
   const displayModes = list(obj(r.displayState).displayState).map((d) => num(obj(d).displayMode));
   const brightness = num(obj(obj(r.displayParams).list).brightness) ?? num(obj(list(obj(r.displayParams).list)[0]).brightness);
 
@@ -259,7 +261,8 @@ export function parseCoex(r: CoexResponses, configuredCapacity?: number, baselin
     failover: parseBackup(obj(r.backup), mon),
     loops: [],
     tiles,
-    topology: screens.length ? parseTopology(screens, mon, liveById, portCapacity(hw, r.output, configuredCapacity), baseline) : undefined,
+    topology: screens.length ? parseTopology(screens, mon, liveById, portCapacity(hw, r.output, configuredCapacity), baseline, tileTemperatures) : undefined,
+    tileTemperatures: tileTemperatures.length ? tileTemperatures : undefined,
   };
 }
 
@@ -421,7 +424,8 @@ function portNumber(outputID: number): number {
   return outputID >= 256 ? (outputID & 0xff) + 1 : outputID + 1;
 }
 
-function parseTopology(screens: Tree[], mon: Tree, liveById: Map<number, Tree>, cap: PortCapacity, baseline: ErrorBaseline): ProcessorTopology {
+/** temps collects each cabinet's temperature, keyed by its tile id, for tile temperature monitoring. */
+function parseTopology(screens: Tree[], mon: Tree, liveById: Map<number, Tree>, cap: PortCapacity, baseline: ErrorBaseline, temps: TileTemperature[] = []): ProcessorTopology {
   const capacity = cap.pixels;
   const outputBad = new Set(list(mon.outputStatus).filter((o) => bad(obj(o).status)).map((o) => num(obj(o).outputID)));
   const portBad = new Set(list(mon.controllerPortMonitorInfos).filter((o) => bad(obj(o).status)).map((o) => num(obj(o).controllerPortID)));
@@ -451,8 +455,10 @@ function parseTopology(screens: Tree[], mon: Tree, liveById: Map<number, Tree>, 
           const reading = (key: string) => [obj(live?.[key]).value, obj(card[key]).value, obj(obj(live?.cabinet)[key]).value].map(num).find((n) => n !== undefined && n > 0);
           const t = reading('temperature');
           const v = reading('voltage');
+          const tileId = `${str(s.screenID) ?? ''}:${id}`;
+          if (t !== undefined) temps.push({ key: tileId, label: `Port ${label}, cabinet ${i + 1}`, value: t });
           return {
-            id: `${str(s.screenID) ?? ''}:${id}`,
+            id: tileId,
             severity: sev,
             label: `Port ${label}, cabinet ${i + 1}`,
             detail: !live ? 'not responding' : faults.length ? faults.join(', ') : [t !== undefined ? `${t} °C` : '', v !== undefined ? `${v} V` : ''].filter(Boolean).join(' · ') || undefined,

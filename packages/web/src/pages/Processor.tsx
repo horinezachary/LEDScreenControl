@@ -4,7 +4,7 @@ import { api } from '../api';
 import { Chart } from '../components/Chart';
 import { Controls } from '../components/Controls';
 import { ago, clock, duration, rate, SEVERITY_LABEL } from '../format';
-import { kindName } from './Overview';
+import { kindName, tileHeat } from './Overview';
 
 // One processor in full: controls, every reading over the last hour, day or week, inputs, redundancy and its events.
 
@@ -99,6 +99,7 @@ export function ProcessorPage({ state, id, now }: { state: DashboardState; id: s
                   : '—'}
               </Row>
               <Row k="Tiles">{p.tiles ? `${p.tiles.online} of ${p.tiles.associated} online${p.tiles.errors ? ` · ${p.tiles.errors} with errors` : ''}` : '—'}</Row>
+              {p.tileTemperatures?.length ? <Row k="Hottest tile">{tileHeat(p, state.limits)}</Row> : null}
               {p.loops.filter((l) => l.found).length > 0 && <Row k="Cable loops found">{p.loops.filter((l) => l.found).length}</Row>}
             </tbody>
           </table>
@@ -142,6 +143,7 @@ function History({ p, state }: { p: ProcessorView; state: DashboardState }) {
 
   const groups: { title: string; match: (s: HistorySeries) => boolean }[] = [
     { title: 'Temperatures', match: (s) => s.key.startsWith('temp:') },
+    { title: 'Tile temperatures', match: (s) => s.key.startsWith('tile-temp:') },
     { title: 'Fans', match: (s) => s.key.startsWith('fan:') },
     { title: 'Port loads', match: (s) => s.key.startsWith('load:') },
     { title: 'Brightness and tiles', match: (s) => s.key === 'brightness' || s.key === 'tiles-online' },
@@ -149,6 +151,8 @@ function History({ p, state }: { p: ProcessorView; state: DashboardState }) {
   const limitFor = (s: HistorySeries) =>
     s.key.startsWith('temp:')
       ? { value: state.limits.tempWarnC, label: `warning ${state.limits.tempWarnC} °C` }
+      : s.key.startsWith('tile-temp:')
+        ? { value: state.limits.tileTempWarnC, label: `warning ${state.limits.tileTempWarnC} °C` }
       : s.key.startsWith('load:')
         ? { value: state.limits.portLoadWarnPercent, label: `warning ${state.limits.portLoadWarnPercent}%` }
         : undefined;

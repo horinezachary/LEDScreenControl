@@ -1,4 +1,5 @@
 import type { DashboardState, ProcessorView } from '@ledmon/shared';
+import { tileTemperatureSummary } from '@ledmon/shared';
 import { ago, duration, rate, SEVERITY_LABEL } from '../format';
 import { linkHandler, processorPath } from '../route';
 
@@ -14,13 +15,13 @@ export function Overview({ state, now, go }: { state: DashboardState; now: numbe
   ) : (
     <>
       {state.processors.map((p) => (
-        <ProcessorCard key={p.id} p={p} now={now} go={go} />
+        <ProcessorCard key={p.id} p={p} now={now} go={go} limits={state.limits} />
       ))}
     </>
   );
 }
 
-function ProcessorCard({ p, now, go }: { p: ProcessorView; now: number; go: (path: string) => void }) {
+function ProcessorCard({ p, now, go, limits }: { p: ProcessorView; now: number; go: (path: string) => void; limits: DashboardState['limits'] }) {
   const active = p.inputs.find((i) => i.active);
   const hottest = [...p.temperatures].sort((a, b) => b.value - a.value)[0];
   const fansOk = p.fans.filter((f) => f.running).length;
@@ -95,6 +96,7 @@ function ProcessorCard({ p, now, go }: { p: ProcessorView; now: number; go: (pat
               '—'
             )}
           </Fact>
+          {p.tileTemperatures?.length ? <Fact label="Hottest tile">{tileHeat(p, limits)}</Fact> : null}
           <Fact label="Redundancy">{failoverText(p)}</Fact>
           <Fact label="Brightness">{p.brightness !== undefined ? (p.brightnessUnit === '%' ? `${Math.round(p.brightness)}%` : `${p.brightness} nits`) : '—'}</Fact>
           <Fact label="Preset">{p.preset ? `${p.preset.number} · ${p.preset.name}` : '—'}</Fact>
@@ -194,3 +196,12 @@ export function kindName(kind: ProcessorView['kind']): string {
   return { brompton: 'Brompton', coex: 'NovaStar COEX', vxpro: 'NovaStar VX Pro', device: 'Network device' }[kind];
 }
 
+
+/** "Port 3, cabinet 2 at 45.0 °C", marked when it crosses the tile limits. */
+export function tileHeat(p: ProcessorView, limits: DashboardState['limits']) {
+  const t = tileTemperatureSummary(p.tileTemperatures);
+  if (!t) return '—';
+  const v = t.hottest.value;
+  const level = v >= limits.tileTempCritC ? ' · critical' : v >= limits.tileTempWarnC ? ' · warning' : '';
+  return <span className={level ? 'bad' : ''}>{`${v.toFixed(1)} °C · ${t.hottest.label} · average ${t.average.toFixed(1)} °C${level}`}</span>;
+}

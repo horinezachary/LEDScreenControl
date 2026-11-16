@@ -11,6 +11,10 @@ export interface Thresholds {
   tempCritC: number;
   /** A running fan below this speed is a warning, in RPM. 0 turns the check off. */
   fanMinRpm: number;
+  /** Any tile or cabinet (its receiving card) at or above this is a warning, in °C. */
+  tileTempWarnC: number;
+  /** ...and at or above this, critical. */
+  tileTempCritC: number;
   /** Share of tiles offline that turns the tile warning critical, in percent. */
   tilesOfflineCritPercent: number;
   /** Missed polls before a processor counts as unreachable (critical). One missed poll is a warning. */
@@ -51,6 +55,8 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   tempWarnC: 70,
   tempCritC: 80,
   fanMinRpm: 500,
+  tileTempWarnC: 65,
+  tileTempCritC: 75,
   tilesOfflineCritPercent: 5,
   unreachableAfterPolls: 3,
   portLoadWarnPercent: 90,
