@@ -116,10 +116,29 @@ export interface ProcessorSnapshot {
   topology?: ProcessorTopology;
   /** Presets stored on the processor, for the preset control. */
   presets?: { number: number; name: string }[];
+  /**
+   * Temperature of each tile or cabinet, from its receiving card, where the processor reports one (COEX). The key
+   * matches the tile's id in the topology.
+   */
+  tileTemperatures?: TileTemperature[];
   /** A line on what this processor cannot report, shown on its card (VX Pro over its control protocol). */
   note?: string;
   /** What the dashboard may ask this processor to do. Missing when controls are off or the driver has none. */
   controls?: ControlCapabilities;
+}
+
+export interface TileTemperature {
+  key: string;
+  /** Where the tile is, e.g. "Port 3, cabinet 2". */
+  label: string;
+  value: number;
+}
+
+/** Hottest and average of a processor's tile temperatures, or undefined when it reports none. */
+export function tileTemperatureSummary(list: TileTemperature[] | undefined): { hottest: TileTemperature; average: number; count: number } | undefined {
+  if (!list?.length) return undefined;
+  const hottest = list.reduce((a, b) => (b.value > a.value ? b : a));
+  return { hottest, average: list.reduce((n, t) => n + t.value, 0) / list.length, count: list.length };
 }
 
 // ---- Controls ----
@@ -244,7 +263,7 @@ export interface DashboardState {
   walls: WallView[];
   events: EventEntry[];
   /** Alert limits, for drawing them on charts. */
-  limits: { tempWarnC: number; tempCritC: number; portLoadWarnPercent: number };
+  limits: { tempWarnC: number; tempCritC: number; tileTempWarnC: number; tileTempCritC: number; portLoadWarnPercent: number };
   /** False when the settings turn the dashboard's controls off. */
   controls: boolean;
 }

@@ -176,3 +176,28 @@ describe('resetting receiving card error counts', () => {
     expect(parseCoex(fx, undefined, { counts: raised, since: Date.now() }).tiles?.errors).toBe(1);
   });
 });
+
+describe('tile temperatures', () => {
+  it('reads every cabinet temperature from a real CX40 Pro', () => {
+    const fx = JSON.parse(readFileSync(new URL('./fixtures/coex-cx40pro-5g.json', import.meta.url), 'utf8'));
+    const temps = parseCoex(fx).tileTemperatures!;
+    expect(temps).toHaveLength(20);
+    const hottest = temps.reduce((a, b) => (b.value > a.value ? b : a));
+    expect(hottest).toMatchObject({ label: 'Port 3, cabinet 3', value: 45 });
+  });
+
+  it('raises one alert for hot tiles, colours them on the wall and keeps a history', async () => {
+    const { poll, monitor } = await setup();
+    let p = await poll();
+    expect(p.alerts.map((a) => a.key)).not.toContain('tile-temp');
+    expect(p.tileTemperatures?.length).toBe(64);
+    p = await poll('cabinet-hot');
+    const alert = p.alerts.find((a) => a.key === 'tile-temp');
+    expect(alert).toMatchObject({ severity: 'warning', rule: 'tile-temperature' });
+    expect(alert?.message).toMatch(/^1 tile at or above 65 °C, hottest Port 5, cabinet 4 at 7\d\.\d °C$/);
+    const hot = monitor.wallViews()[0].groups[0].chains[4].tiles[3];
+    expect(hot.severity).toBe('warning');
+    expect(hot.detail).toMatch(/near the tile limit/);
+    expect(monitor.history.series('imag', '1h').map((s) => s.key)).toEqual(expect.arrayContaining(['tile-temp:max', 'tile-temp:avg']));
+  });
+});

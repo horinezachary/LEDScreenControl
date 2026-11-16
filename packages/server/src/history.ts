@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { HistorySeries, ProcessorView } from '@ledmon/shared';
+import { tileTemperatureSummary } from '@ledmon/shared';
 
 interface Bucket {
   t: number;
@@ -51,6 +52,11 @@ export class History {
     for (const f of p.fans) add(`fan:${f.key}`, f.label, 'RPM', f.running ? f.rpm : 0);
     add('brightness', 'Brightness', p.brightnessUnit ?? 'nits', p.brightness);
     if (p.tiles) add('tiles-online', 'Tiles online', 'tiles', p.tiles.online);
+    const tt = tileTemperatureSummary(p.tileTemperatures);
+    if (tt) {
+      add('tile-temp:max', 'Hottest tile', '°C', tt.hottest.value);
+      add('tile-temp:avg', 'Average tile', '°C', Math.round(tt.average * 10) / 10);
+    }
     for (const g of p.topology?.groups ?? []) {
       for (const c of g.chains) add(`load:${c.id}`, `${c.label} load`, '%', c.from.load?.percent);
     }

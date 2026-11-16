@@ -73,3 +73,20 @@ describe('loopAlerts', () => {
     expect(loopAlerts(snapshot('loop-broken'), new Map())).toEqual([]);
   });
 });
+
+describe('tile temperatures', () => {
+  const temps = (...v: number[]) => v.map((value, i) => ({ key: `t${i}`, label: `Port 1, cabinet ${i + 1}`, value }));
+  const alertsFor = (...v: number[]) => evaluate({ ...snapshot(), tileTemperatures: temps(...v) }, DEFAULT_THRESHOLDS).alerts.filter((a) => a.key === 'tile-temp');
+
+  it('says nothing below the warning limit', () => {
+    expect(alertsFor(40, 50, 64.9)).toEqual([]);
+  });
+
+  it('warns once for every warm tile, naming the hottest', () => {
+    expect(alertsFor(40, 66, 70)).toMatchObject([{ severity: 'warning', message: '2 tiles at or above 65 °C, hottest Port 1, cabinet 3 at 70.0 °C' }]);
+  });
+
+  it('turns critical and counts only the tiles over the critical limit', () => {
+    expect(alertsFor(66, 76, 80)).toMatchObject([{ severity: 'critical', message: '2 tiles at or above 75 °C, hottest Port 1, cabinet 3 at 80.0 °C' }]);
+  });
+});

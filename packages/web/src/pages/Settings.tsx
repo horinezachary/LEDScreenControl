@@ -9,6 +9,8 @@ import { api } from '../api';
 interface Thresholds {
   tempWarnC: number;
   tempCritC: number;
+  tileTempWarnC: number;
+  tileTempCritC: number;
   fanMinRpm: number;
   tilesOfflineCritPercent: number;
   unreachableAfterPolls: number;
@@ -569,6 +571,8 @@ function AlertLimits({ draft, update }: Edit) {
       <div className="grid-form">
         {field('tempWarnC', 'Temperature warning (°C)', 'Any processor sensor at or above this.')}
         {field('tempCritC', 'Temperature critical (°C)', '')}
+        {field('tileTempWarnC', 'Tile temperature warning (°C)', 'Any tile or cabinet (its receiving card) at or above this. COEX.')}
+        {field('tileTempCritC', 'Tile temperature critical (°C)', '')}
         {field('fanMinRpm', 'Slowest fan speed (RPM)', 'A running fan below this is a warning. 0 turns it off.')}
         {field('tilesOfflineCritPercent', 'Tiles offline critical (%)', 'Below this share it is a warning.')}
         {field('unreachableAfterPolls', 'Missed polls before critical', 'One missed poll is a warning.')}

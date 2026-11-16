@@ -12,7 +12,7 @@ import { deviceDriver } from './drivers/device.js';
 import { EventLog } from './events.js';
 import { History } from './history.js';
 import type { AlertChange } from './alerter.js';
-import { evaluate, loopAlerts } from './rules.js';
+import { evaluate, loopAlerts, markHotTiles } from './rules.js';
 import { Topology } from './topology.js';
 import { APP_VERSION } from './version.js';
 
@@ -206,6 +206,8 @@ export class Monitor extends EventEmitter {
       limits: {
         tempWarnC: this.config.thresholds.tempWarnC,
         tempCritC: this.config.thresholds.tempCritC,
+        tileTempWarnC: this.config.thresholds.tileTempWarnC,
+        tileTempCritC: this.config.thresholds.tileTempCritC,
         portLoadWarnPercent: this.config.thresholds.portLoadWarnPercent,
       },
       controls: this.config.controls,
@@ -279,7 +281,8 @@ export class Monitor extends EventEmitter {
     if (entry.removed) return;
     const extra = loopAlerts(snap, entry.loopsSeen);
     const { alerts, severity } = evaluate(snap, this.config.thresholds, prev.alerts, Date.now(), extra);
-    entry.view = { ...snap, alerts, severity, controls: this.config.controls ? entry.driver.capabilities : undefined };
+    const topology = markHotTiles(snap.topology, snap.tileTemperatures, this.config.thresholds);
+    entry.view = { ...snap, topology, alerts, severity, controls: this.config.controls ? entry.driver.capabilities : undefined };
     this.history.record(entry.view);
     this.logChanges(entry.view, prev);
     this.emit('change', entry.view);

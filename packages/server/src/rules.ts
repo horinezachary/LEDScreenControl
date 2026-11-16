@@ -1,7 +1,7 @@
 // Health rules: turn a snapshot into alerts. Each alert has a stable key, so the monitor can tell a new problem from
 // one that is still going, and keep the time it started.
-import type { Alert, ProcessorSnapshot, Severity } from '@ledmon/shared';
-import { worstSeverity } from '@ledmon/shared';
+import type { Alert, ProcessorSnapshot, ProcessorTopology, Severity, TileTemperature } from '@ledmon/shared';
+import { SEVERITY_ORDER, worstSeverity } from '@ledmon/shared';
 import type { Thresholds } from './config.js';
 
 export type NewAlert = Omit<Alert, 'since'>;
@@ -47,6 +47,22 @@ function check(s: ProcessorSnapshot, t: Thresholds): NewAlert[] {
     } else if (r.value >= t.tempWarnC) {
       out.push({ key: `temp:${r.key}`, rule: 'temperature', severity: 'warning', message: `${r.label} at ${r.value.toFixed(1)} °C (warning at ${t.tempWarnC} °C)` });
     }
+  }
+
+  // Tiles: one alert for the whole wall, naming the hottest, so a warm wall does not raise one alert per cabinet.
+  const tileTemps = s.tileTemperatures ?? [];
+  const hot = tileTemps.filter((r) => r.value >= t.tileTempWarnC).sort((a, b) => b.value - a.value);
+  if (hot.length) {
+    const crit = hot.filter((r) => r.value >= t.tileTempCritC).length;
+    const top = hot[0];
+    const count = crit || hot.length;
+    const limit = crit ? t.tileTempCritC : t.tileTempWarnC;
+    out.push({
+      key: 'tile-temp',
+      rule: 'tile-temperature',
+      severity: crit ? 'critical' : 'warning',
+      message: `${count} tile${count === 1 ? '' : 's'} at or above ${limit} °C, hottest ${top.label} at ${top.value.toFixed(1)} °C`,
+    });
   }
 
   for (const f of s.fans) {
@@ -124,4 +140,33 @@ export function loopAlerts(s: ProcessorSnapshot, everFound: Map<string, string>)
     }
   }
   return out;
+}
+
+function tempSeverity(value: number, t: Thresholds): Severity {
+  return value >= t.tileTempCritC ? 'critical' : value >= t.tileTempWarnC ? 'warning' : 'ok';
+}
+
+/** Marks tiles in a processor's own topology warning or critical when their temperature crosses the tile limits. */
+export function markHotTiles(topology: ProcessorTopology | undefined, temps: TileTemperature[] | undefined, t: Thresholds): ProcessorTopology | undefined {
+  if (!topology || !temps?.length) return topology;
+  const byKey = new Map(temps.map((r) => [r.key, r.value]));
+  const worse = (a: Severity, b: Severity) => (SEVERITY_ORDER.indexOf(a) <= SEVERITY_ORDER.indexOf(b) ? a : b);
+  return {
+    ...topology,
+    groups: topology.groups.map((g) => ({
+      ...g,
+      chains: g.chains.map((c) => {
+        const tiles = c.tiles.map((tile) => {
+          const v = byKey.get(tile.id);
+          if (v === undefined) return tile;
+          const sev = tempSeverity(v, t);
+          if (sev === 'ok') return tile;
+          const note = `${v.toFixed(1)} °C, ${sev === 'critical' ? 'over' : 'near'} the tile limit`;
+          return { ...tile, severity: worse(tile.severity, sev), detail: tile.detail?.includes('°C') ? note : [tile.detail, note].filter(Boolean).join(' · ') };
+        });
+        const sev = tiles.reduce<Severity>((a, x) => (x.severity === 'unknown' ? a : worse(a, x.severity)), c.severity);
+        return { ...c, tiles, severity: sev };
+      }),
+    })),
+  };
 }
