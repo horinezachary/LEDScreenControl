@@ -184,8 +184,8 @@ GitHub release. PR titles decide the bump: `feat:` minor, `fix:` (or anything el
 major, `[skip release]` none. The tag is the version; `scripts/app-version.sh` reads it for the dashboard footer and
 the app.
 
-Each release carries its downloads, built from the release's tag: `LED-Monitor-vX.Y.Z-mac.dmg` (the Mac app) and
-`led-monitor-server-vX.Y.Z.tar.gz` (the server and dashboard for any machine with Node 22: unpack it and run
+Each release carries its downloads, built from the release's tag: `LED-Monitor-vX.Y.Z-mac.dmg` (the Mac app),
+`LED-Monitor-vX.Y.Z-windows-setup.exe` (the Windows installer) and `led-monitor-server-vX.Y.Z.tar.gz` (the server and dashboard for any machine with Node 22: unpack it and run
 `node server/dist/cli.cjs --data ./data`). To build them for a release that has none, run "Auto release" by hand from
 the Actions tab with the tag. The Mac app and the Windows installer are also built on every pull request (Actions,
 "Mac app" and "Windows app") and can be downloaded from the run.
